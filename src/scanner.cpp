@@ -143,7 +143,7 @@ void Scanner::FindTransitionPoints() {
 
 	std::vector<double> previousFields(2);
 
-	for (int i=0; i<resultsForT.size(); i++) {
+	for (int i=0; i < static_cast<int>(resultsForT.size()); i++) {
 		std::vector<double> fields(2);
 		fields[0] = GetFromMap(resultsForT[i], "vByT");
 		fields[1] = GetFromMap(resultsForT[i], "xByT");
@@ -214,7 +214,7 @@ void Scanner::FindTransitionPoints() {
 			double LByT4 = 0.0;
 
 			// Latent heat. Need dV/dT on both sides of the transition
-			if (i-2 < 0 || i+1 >= resultsForT.size()) {
+			if (i-2 < 0 || i+1 >= static_cast<int>(resultsForT.size())) {
 				warningsDerivatives++;
 				std::cout << "!!! Not enough data points for calculating latent heat at Tc = " << Tc << "\n";
 			} else {
@@ -258,7 +258,7 @@ void Scanner::FindTransitionPoints() {
 			double vShiftDim6 = 0.0; // GetFromMap(p1, "vShiftDim6");
 			double xShiftDim6 = 0.0; // GetFromMap(p1, "xShiftDim6");
 
-			if (ind_new < 0 || ind_new >= resultsForT.size()) {
+			if (ind_new < 0 || ind_new >= static_cast<int>(resultsForT.size())) {
 				// index out of bounds, can't calculate dim-6 error
 				warningsDerivatives++;
 				std::cout << "! Can't calculate dim-6 error; Tc was " << Tc << "\n";
@@ -417,7 +417,7 @@ bool Scanner::CheckT0Stability(const ParameterMap &MSParams) {
 void Scanner::AppendToFile(std::string fname, std::vector<double> data) {
 	std::ofstream f;
 	f.open(fname, std::ios_base::app);
-	for (int i=0; i<data.size(); i++) {
+	for (int i=0; i<static_cast<int>(data.size()); i++) {
 		if (i > 0) 
 			f << " "; 
 		f << data[i];

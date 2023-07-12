@@ -1,7 +1,7 @@
 #ifndef INTEGRALS3D_H
 #define INTEGRALS3D_H
 
-#include <boost/math/constants/constants.hpp> // boost PI
+#include "common.h"
 
 /* 3D integrals for the effective potential, in MS-bar regularization. Finite parts only.
 Cannot template a namespace, so I made this is kind of a "static class". */
@@ -274,7 +274,7 @@ public:
 
 /* Set the constants. Need funny typename syntax here because the Float type is defined within the template class. */
 template <typename Complex>
-const typename Integrals3D<Complex>::Float Integrals3D<Complex>::pi = boost::math::constants::pi<Float>();
+const typename Integrals3D<Complex>::Float Integrals3D<Complex>::pi = PI; // TODO precision
 template <typename Complex>
 const typename Integrals3D<Complex>::Float Integrals3D<Complex>::pi4sqInv = 1.0/(16.0 * pi*pi);
 template <typename Complex>
