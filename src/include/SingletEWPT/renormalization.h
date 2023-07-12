@@ -58,7 +58,7 @@ private:
     const double Mt = ExperimentalInput::Mt;
     const double MW = ExperimentalInput::MW;
     const double MZ = ExperimentalInput::MZ;
-    const double MH = ExperimentalInput::MW;
+    
     // Alias for g3sq, SU(3) coupling
     const double gs2 = ExperimentalInput::gs2;
     // SU(3) coupling
