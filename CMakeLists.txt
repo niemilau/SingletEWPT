@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
-project(singletEWPT VERSION 0.5.0 LANGUAGES CXX)
+
+set(PROJECT_NAME SingletEWPT)
+project(${PROJECT_NAME} VERSION 0.5.0 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -15,10 +17,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Set the path to the installation directories
 set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/bin)
 
+
 # Configure build type if not given by the user
+
+set(CMAKE_CONFIGURATION_TYPES Debug Release)
+
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-    #set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_BUILD_TYPE Debug)
+    #set(CMAKE_BUILD_TYPE Release)
 endif()
 
 
@@ -37,7 +43,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     if(${CMAKE_BUILD_TYPE} MATCHES Debug)
     	## This flag is needed also during linking so add_compile_options doesn't do the trick apparently
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    	message("-- Configuring a Debug build")
+    	
 		# no optimization here since it can interfere with profiling
     endif()
     
@@ -51,8 +57,13 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     #add_compile_options(/W4 /WX)
 endif()
 
+##---------------------- Unit testing
+if(${CMAKE_BUILD_TYPE} MATCHES Debug)
+	message("-- Configuring a Debug build")
+	add_subdirectory(tests)
+endif()
 
-set(TARGET_EXEC singletEWPT)
+set(TARGET_EXEC ${PROJECT_NAME})
 
 # Add all source files in the src directory
 file(GLOB COMMON_SOURCES "src/*.cpp")
