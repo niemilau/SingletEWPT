@@ -7,7 +7,7 @@
 namespace DimRed {
 
     /* Constant cc = 1/2 * (log(8pi/9) + Zeta'(2)/Zeta(2) - 2EulerGamma) */
-    const double CC = -0.34872273635229090400412764915100;
+    constexpr double CC = -0.34872273635229090400412764915100;
 
     /* Perform dimensional reduction: 4D SM + singlet --> 3D SM + singlet + A0. 
     Parameter conventions are as in 2103.07467.
