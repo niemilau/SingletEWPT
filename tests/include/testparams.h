@@ -5,21 +5,18 @@
 
 struct TestParams {
 
-    double relativeError = 1e-15;
-
     // Input parameters for SM + singlet
     ParameterMap inputParams;
 
-public:
     TestParams() {
-        inputParams["mh2"] = 600.0;
+        inputParams["Mh1"] = 125.10;
+        inputParams["Mh2"] = 600.0;
+        inputParams["a2"] = 4.0;
+        inputParams["sinTheta"] = 0.12;
+        inputParams["b3"] = -75.0;
+        inputParams["b4"] = 0.5;
+        
     }
-
-    double mh2 = 600.0;
-    double a2 = 4.0;
-    double sinTheta = 0.12;
-    double b3 = -75.0;
-    double b4 = 0.5;
 
     double T = 143.2;
 };
