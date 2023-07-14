@@ -11,12 +11,13 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
 
-# Fetch and configure Google Test
-message("Fetching Google Test")
+
+## Fetch Google Test library
+message(STATUS "Fetching Google Test...")
 FetchContent_MakeAvailable(googletest)
 
-set(TEST_EXEC ${MAIN_EXEC}_Tests)
 
+set(TEST_EXEC ${MAIN_EXEC}_Tests)
 
 set(TEST_SOURCES test_main.cpp test_renormalization.cpp test_Veff3D.cpp)
 

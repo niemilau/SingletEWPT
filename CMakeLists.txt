@@ -61,7 +61,7 @@ add_subdirectory(src)
 
 # Unit tests
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	message("== NOTE: Configuring Debug build")
-	message("")
+	message(STATUS "==== NOTE: Configuring Debug build")
+	message(STATUS "")
     add_subdirectory(tests)
 endif()
