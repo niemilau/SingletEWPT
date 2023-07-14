@@ -1,25 +1,28 @@
-cmake_minimum_required(VERSION 3.0)
-project(singletEWPT VERSION 0.5.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.15)
+project(SingletEWPT VERSION 0.6.0 LANGUAGES CXX)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
 
 # Set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-
-# Set the path to the installation directories
+## Installation direction
 set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/bin)
 
-# Configure build type if not given by the user
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-    #set(CMAKE_BUILD_TYPE Debug)
+
+# Set default built type
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+	set(CMAKE_BUILD_TYPE Release)
 endif()
+
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 
 set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall")
@@ -34,14 +37,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     #add_compile_options(-Wpedantic)
     
     ## Add flags for gprof profiling. Debug builds only
-    if(${CMAKE_BUILD_TYPE} MATCHES Debug)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     	## This flag is needed also during linking so add_compile_options doesn't do the trick apparently
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    	message("-- Configuring a Debug build")
 		# no optimization here since it can interfere with profiling
     endif()
     
-    if(CMAKE_BUILD_TYPE MATCHES "Release")
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
     	# Optimization
     	add_compile_options(-O3)
     endif()
@@ -52,32 +54,15 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 
-set(TARGET_EXEC singletEWPT)
+## Main program target
+set(MAIN_EXEC SingletEWPT)
 
-# Add all source files in the src directory
-file(GLOB COMMON_SOURCES "src/*.cpp")
+# Main code
+add_subdirectory(src)
 
-# Create an executable target
-add_executable(${TARGET_EXEC} ${COMMON_SOURCES})
-
-# Project specific includes (global scope again) 
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/include/SingletEWPT
-)
-
-## External packages
-find_package(dlib REQUIRED)
-
-target_link_libraries(${TARGET_EXEC} PRIVATE dlib::dlib)
-
-#--------------------------
-
-
-# 'make install'
-install(TARGETS ${TARGET_EXEC} DESTINATION ${INSTALL_DIR})
-
-
-# Enable testing
-#enable_testing()
-#add_subdirectory(tests)
-
+# Unit tests
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	message(STATUS "==== NOTE: Configuring Debug build")
+	message(STATUS "")
+    add_subdirectory(tests)
+endif()
