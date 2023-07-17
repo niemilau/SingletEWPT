@@ -2,12 +2,30 @@
 
 Program that does stuff
 
-# Dependencies
+## Dependencies
 
 - dlib C++ library
-- Boost odeint
+- Boost
 
-# Installation
+## Installation
+
+### Installing dependencies
+
+You will need to manually install the Boost C++ libraries.
+Linux:
+```
+sudo apt-get install libboost-all-dev
+```
+
+MacOS:
+```
+brew install boost
+```
+
+For dlib, you can either manually install the libraries from http://dlib.net, or let CMake automatically fetch it for you in the next step.
+
+
+### Building the program
 
 ```
 mkdir build
@@ -17,9 +35,7 @@ make
 make install	
 ```
 
-The 
-
-# Debugging
+## Debugging
 
 To build debug version and unit tests use the ```-DCMAKE_BUILD_TYPE=Debug``` flag when calling cmake, ie:
 
