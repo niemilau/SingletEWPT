@@ -10,51 +10,40 @@ set(COMMON_SOURCES betafunct.cpp dimred.cpp PassarinoVeltman.cpp renormalization
 add_library(${MAIN_LIB} STATIC ${COMMON_SOURCES})
 
 
+## ------ Find/fetch external packages
+message(STATUS "Loading external libraries")
+
 include(FetchContent)
+Set(FETCHCONTENT_QUIET FALSE) ## Show what the fetching is doing
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
-# Attempt to locate third-party packages
+# Boost: FetchContent apparently does not work well with Boost
+
 find_package(Boost REQUIRED)
-find_package(dlib REQUIRED)
 
-if(NOT Boost_FOUND)
+# dlib: Fetch if not found on the system
+find_package(dlib QUIET)
 
-	message(STATUS "Could not find Boost libraries. Attempting to fetch...")
-	Set(FETCHCONTENT_QUIET FALSE) ## Long process so we want to see what it's doing
-	
-	set(BOOST_ENABLE_CMAKE ON)
-	FetchContent_Declare(
-	  Boost
-	  GIT_REPOSITORY https://github.com/boostorg/boost.git
-	  GIT_TAG boost-1.82.0
-	  GIT_PROGRESS TRUE
-	)
-	FetchContent_MakeAvailable(Boost)
-
-endif()
-
-
-if(NOT dlib_FOUND)
-
-	message(STATUS "Could not find dlib libraries. Attempting to fetch...")
-	Set(FETCHCONTENT_QUIET FALSE)
+if (NOT dlib_FOUND)
+	message(STATUS "dlib not found, attempting to fetch")
 	FetchContent_Declare(dlib
 		GIT_REPOSITORY https://github.com/davisking/dlib.git
-		GIT_TAG        v19.18
+		GIT_TAG        v19.24.2
 		GIT_PROGRESS TRUE
 	)
 	FetchContent_MakeAvailable(dlib)
-
 endif()
 
+## ------- 
 
 target_include_directories(${MAIN_LIB} PRIVATE 
 	${CMAKE_CURRENT_SOURCE_DIR}/include/SingletEWPT
 	dlib::dlib # dlib_INCLUDE_DIRS is apparently deprecated
-    ${Boost_INCLUDE_DIRS}
+    Boost::boost
 )
 
 ## Public linkage to external libs
-target_link_libraries(${MAIN_LIB} PUBLIC dlib::dlib ${Boost_LIBRARIES})
+target_link_libraries(${MAIN_LIB} PUBLIC dlib::dlib Boost::boost)
 
 ## The 'main' program
 add_executable(${MAIN_EXEC} main.cpp)

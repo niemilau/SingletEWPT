@@ -1,20 +1,26 @@
 # Get latest release of Google Test from github 
 include(FetchContent)
+Set(FETCHCONTENT_QUIET FALSE) ## Show what the fetching is doing
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
+## Fetch Google Test library
+include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        main
+  GIT_TAG        v1.13.0
 )
 
-# Set options for fetching Google Test
+# For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
 
-
-## Fetch Google Test library
-message(STATUS "Fetching Google Test...")
-FetchContent_MakeAvailable(googletest)
+#FetchContent_MakeAvailable(googletest)
+## This should be equivalent to FetchContent_MakeAvailable, except that we exclude gtest from install
+FetchContent_GetProperties(googletest)
+if(NOT googletest_POPULATED)
+  FetchContent_Populate(googletest)
+  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 
 set(TEST_EXEC ${MAIN_EXEC}_Tests)
