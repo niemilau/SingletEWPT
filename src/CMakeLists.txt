@@ -17,9 +17,8 @@ include(FetchContent)
 Set(FETCHCONTENT_QUIET FALSE) ## Show what the fetching is doing
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
-# Boost: FetchContent apparently does not work well with Boost
-
-find_package(Boost REQUIRED)
+# GSL
+find_package(GSL REQUIRED)
 
 # dlib: Fetch if not found on the system
 find_package(dlib QUIET)
@@ -39,11 +38,11 @@ endif()
 target_include_directories(${MAIN_LIB} PRIVATE 
 	${CMAKE_CURRENT_SOURCE_DIR}/include/SingletEWPT
 	dlib::dlib # dlib_INCLUDE_DIRS is apparently deprecated
-    Boost::boost
+	GSL::gsl
 )
 
 ## Public linkage to external libs
-target_link_libraries(${MAIN_LIB} PUBLIC dlib::dlib Boost::boost)
+target_link_libraries(${MAIN_LIB} PUBLIC dlib::dlib GSL::gsl)
 
 ## The 'main' program
 add_executable(${MAIN_EXEC} main.cpp)
