@@ -5,22 +5,13 @@ Program that does stuff
 ## Dependencies
 
 - dlib C++ library
-- Boost
+- GSL
 
 ## Installation
 
 ### Installing dependencies
 
-You will need to manually install the Boost C++ libraries.
-Linux:
-```
-sudo apt-get install libboost-all-dev
-```
-
-MacOS:
-```
-brew install boost
-```
+You will need to manually install the GSL libraries.
 
 For dlib, you can either manually install the libraries from http://dlib.net, or let CMake automatically fetch it for you in the next step.
 
