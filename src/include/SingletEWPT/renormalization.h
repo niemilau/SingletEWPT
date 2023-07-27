@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-#include <boost/numeric/odeint.hpp>
-
 // Loop order for MS-bar renormalization. Using a separate typename in case this gets extended later 
 using ELoopOrderMS = ELoopOrder;
 
@@ -107,7 +105,7 @@ public:
     // Convert Sin(theta) to the angle theta
     inline double GetTheta(double sinTheta) {
         // Needs to be within |sinTheta| < 1/sqrt(2); this does not restrict the available parameter space
-        if (abs(sinTheta) > 1./sqrt(2.)) {
+        if (std::abs(sinTheta) > 1./std::sqrt(2.)) {
             std::cout << "!!! Invalid sinTheta = " << sinTheta << " ; needs to be |sinTheta| < 1/sqrt(2)\n";
             Die("Exiting...\n", 90);
         }
