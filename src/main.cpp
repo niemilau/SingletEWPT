@@ -177,7 +177,10 @@ int main() {
 				// Don't modify the original effPot here, would be too error prone
 				EffPot<Complex> effPotNew(newParams3D);
 				// Find LOCAL minimum near to the original one
-				ParameterMap newMinimum = effPotNew.FindLocalMinimum(scanner.loopOrderVeff, false, v, x);
+				// Better results by reducing initial trust radius?
+				MinimizationParams minParams;
+				minParams.initialTrustRadius = 5;
+				ParameterMap newMinimum = effPotNew.FindLocalMinimum(scanner.loopOrderVeff, false, v, x, minParams);
 
 				// Sensibility check
 				double sensitivity = 0.5;

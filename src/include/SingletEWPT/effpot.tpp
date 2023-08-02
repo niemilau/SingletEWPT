@@ -1,3 +1,7 @@
+#include <gsl/gsl_poly.h>
+
+
+
 
 template <typename Complex>
 Complex EffPot<Complex>::EvaluatePotential(Float v, Float x, const ELoopOrderVeff loopOrder, bool bDoDim6)
@@ -187,21 +191,148 @@ Complex EffPot<Complex>::V1()
 
 
 template <typename Complex>
-std::vector<double> EffPot<Complex>::TreeLevelMinima() const {
+std::vector<std::array<double, 2>> EffPot<Complex>::TreeLevelMinima() const {
 
-	// Need to solve dV/dv = 0, dV/dx = 0 so that d^2V/dv^2 > 0 and hessian > 0
-	std::vector<double> res(1, 0.0);
-	return res;
+	// Need to solve dV/dv = 0, dV/dx = 0 so that d^2V/dv^2 > 0, hessian > 0
+	std::vector<std::array<double, 2>> minima;
+	minima.reserve(6);
+	// Will solve 'manually' so that v is first solved from dV/dv = 0 
+	// => dV/dx = 0 becomes cubic eq: 	a x^3 + b x^2 + c x + d = 0. 
+	// Note that gsl_poly_solve_cubic() solves x^3 + b x^2 + c x + d = 0, so need to scale with coeff. of x^3.
+
+	// NB: v > 0 case only makes sense for lambda > 0 but our loop-corrected lambda may actually be slightly negative.
+	// To allow for this case I just take abs of lambda here.
+	double lambda_abs = std::abs(lambda);	
+	
+	// Finds real roots of a x^3 + b x^2 + c x + d = 0. Has either 1 or 3 real roots
+	auto PolySolve3 = [](double a, double b, double c, double d) {
+		double x[3];
+		std::vector<double> res;
+		res.reserve(3);
+		int nroots = 0;
+
+		if (std::abs(a) < 1e-14) {
+			// now essentially a = 0 => is actually a quadratic eq
+			nroots = gsl_poly_solve_quadratic(b, c, d, &x[0], &x[1]);
+
+		} else {
+			// Now we have a proper cubic eq and can use gsl_poly_solve_cubic
+			nroots = gsl_poly_solve_cubic(b/a, c/a, d/a, &x[0], &x[1], &x[2]);
+		}
+
+		for (int i=0; i<nroots; ++i) {
+			res.push_back(x[i]);
+		}
+
+		return res;
+	};
+
+	// Hessian determinant
+	auto Hessian = [&](double v, double x) {
+		
+		return b2*msqPhi - (a1*a1*(v*v))/4. + (a2*msqPhi*(v*v))/2. + (a1*b2*x)/2. + 
+				2*b3*msqPhi*x - (3*a1*a2*(v*v)*x)/4. + (a2*b2*(x*x))/2. + 
+				a1*b3*(x*x) + 3*b4*msqPhi*(x*x) - (3*(a2*a2)*(v*v)*(x*x))/4. + 
+				a2*b3*(x*x*x) + (3*a1*b4*(x*x*x))/2. + 
+				(3*a2*b4*(x*x*x*x))/2. + 3*b2*(v*v)*lambda_abs + 
+				(3*a2*(v*v*v*v)*lambda_abs)/2. + 6*b3*(v*v)*x*lambda_abs + 9*b4*(v*v)*(x*x)*lambda_abs;
+	};
+	// d^2V / dv^2
+	auto d2Vdv2 = [&](double v, double x) {
+		return msqPhi + 3.0*v*v * lambda_abs + 0.5*a1*x + 0.5*a2*x*x; 
+	};
+	
+	// Solve cubic eq for x
+	double a, b, c, d;
+	// v = 0 case
+	a = b4;
+	b = b3;
+	c = b2;
+	d = b1;
+	std::vector<double> xsolns = PolySolve3(a, b, c, d);
+	for (double x : xsolns) {
+		double v = 0;
+		if (Hessian(v, x) > 0 && d2Vdv2(v, x) > 0) {
+			minima.push_back({v, x});
+		}
+	}
+
+	// v > 0 case. 
+	a = b4 - a2*a2/(4.0*lambda_abs);
+	b = b3 - 3.0*a1*a2 / (8.0*lambda_abs);
+	c = b2 - a1*a1 / (8.0*lambda_abs) - a2*msqPhi / (2.0*lambda_abs);
+	d = b1 - a1*msqPhi / (4.0*lambda_abs);
+
+	xsolns = PolySolve3(a, b, c, d);
+	for (double x : xsolns) {
+
+		// Check if real soln for v can exist
+		double kappa = -2.0*msqPhi - a1*x - a2*x*x;
+		if (kappa < 0 && lambda > 0) continue;
+
+		double v = std::sqrt( kappa / (2.0*lambda_abs));
+		if (Hessian(v, x) > 0 && d2Vdv2(v, x) > 0) {
+			minima.push_back({v, x});
+		}
+	}
+
+	return minima;
+}
+
+template <typename Complex>
+std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints() const {
+
+	std::vector<std::array<double, 2>> searchPoints = TreeLevelMinima();
+
+	bool bHasHiggsPhase = false;
+	bool bHasSingletPhase = false;
+	bool bHasSymmetricPhase = false;
+
+	if (bIsZ2Symmetric) {
+		// In Z2 symmetric limit we just need x >= 0
+		for (std::size_t i = 0; i < searchPoints.size(); ++i) {
+			auto point = searchPoints[i];
+			double x = point[1];
+
+			if (x < 0) {
+				searchPoints.erase(searchPoints.begin() + i);
+			}
+		}
+	}
+
+	// Check that we have all sensible points
+	double smallFieldValue = 1e-3;
+	for (auto & point: searchPoints) {
+		double v = point[0];
+		double x = point[1];
+
+		if (std::abs(v) > smallFieldValue) bHasHiggsPhase = true;
+		if (std::abs(x) > smallFieldValue) bHasSingletPhase = true;
+		if (std::abs(v) <= smallFieldValue && std::abs(x) <= smallFieldValue) bHasSymmetricPhase = true;
+		
+	}
+	
+	if (!bHasSymmetricPhase) {
+		searchPoints.push_back({smallFieldValue, smallFieldValue});
+	}
+	if (!bHasHiggsPhase) {
+		searchPoints.push_back({15.0, smallFieldValue});
+	}
+	if (!bHasSingletPhase) {
+		searchPoints.push_back({smallFieldValue, 10.0});
+	}
+
+	return searchPoints;
 }
 
 
 // Find a local minimum with initial guess (v0, x0). Returns doubles.
 template <typename Complex>
-ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0) {
+ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams) {
 
 	using ColumnVector = dlib::matrix<double, 0, 1>;
 
-	// Calculate real part of the potential in a lambda expression and pass it to dlib for minimization
+	// Lambda for passing real part of Veff to the minimization routine
 	auto VeffValue = [&](ColumnVector vevs) {
 		auto v = vevs(0);
 		auto x = vevs(1); 
@@ -210,12 +341,13 @@ ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, b
 	};
 
 	// BOBYQA minimization from dlib (TODO tune the parameters here)
-	double singletLowerBound = -10000;
+	double singletLowerBound = -1e10;
 	if (bIsZ2Symmetric) 
 		singletLowerBound = 0.0;
 
-	ColumnVector lowerBound{5e-5, singletLowerBound};
-	ColumnVector upperBound{10000, 10000};
+	//ColumnVector lowerBound{5e-5, singletLowerBound};
+	ColumnVector lowerBound{0, singletLowerBound};
+	ColumnVector upperBound{1e10, 1e10};
 	ColumnVector minimum = {v0, x0};
 	try { 
 		dlib::find_min_bobyqa(VeffValue, 
@@ -223,9 +355,9 @@ ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, b
 			6,    // number of interpolation points
 			lowerBound,  // lower bound constraint
 			upperBound,  // upper bound constraint
-			5,    // initial trust region radius
-			1e-4,  // stopping trust region radius
-			1000    // max number of objective function evaluations
+			minParams.initialTrustRadius,    // initial trust region radius
+			minParams.stoppingTrustRadius,  // stopping trust region radius
+			minParams.maxFunctionEvaluations    // max number of objective function evaluations
 		);
 	} catch (dlib::bobyqa_failure& exc) {
 		std::cout << "!!! Exception thrown in FindLocalMinimum():\n";
@@ -254,59 +386,23 @@ Works with doubles, which get converted to Complex for internal computations */
 template <typename Complex>
 ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6) {
 
-	using ColumnVector = std::vector<double>;
 
-
-	// Initial guesses for minima
-	int NPOINTS = 5;
-	std::vector<ColumnVector> startingPoint(NPOINTS);
-
-/*
-	double singletLowerBound = -500;
-	if (bIsZ2Symmetric) {
-		singletLowerBound = 0.0;
-	}
-	
-	for (int n=0; n<NPOINTS; n++) {
-		// TODO seed!
-		double d1 = drand48() / ((double) RAND_MAX + 1);
-		double d2 = drand48() / ((double) RAND_MAX + 1);
-		startingPoint[n] = {1e-6 + d1 * (1000.0 - 1e-6), singletLowerBound + d2 * (1000 - singletLowerBound)};
-	}
-*/
-
-	startingPoint[0] = {1e-1, 0.0};
-	startingPoint[1] = {20, 0.0};
-	// In Z2 symmetric model, search only singlet values >= 0
-	if (bIsZ2Symmetric) {
-		startingPoint[2] = {1e-1, 20};
-		startingPoint[3] = {1e-2, 5};
-	}
-	else {
-		
-		// If b4 is very small, singlet VEV can get large so set the initial search point accordingly
-		// This is relevant in small mass region (mh2 << 100 GeV)
-		if (abs(this->b4) < 0.01) {
-			startingPoint[2] = {10, -500.0};
-			startingPoint[3] = {1e-2, 500};
-		} else {
-			startingPoint[2] = {10, -4.0};
-			startingPoint[3] = {1e-2, 5.0};
-		}
-
-	}
-	// One point at very large field values
-	startingPoint[4] = {500, 500};
-
+	std::vector<std::array<double, 2>> startingPoints = InitialSearchPoints();
 
 	// Our current result for the global minimum
 	ParameterMap globalMinimum;
 
-	for (int i=0; i<NPOINTS; i++) {
+	MinimizationParams minParams;
 
-		double v = startingPoint[i][0];
-		double x = startingPoint[i][1];
-		ParameterMap minimum = this->FindLocalMinimum(loopOrder, bDoDim6, v, x);
+	for (unsigned int i=0; i<startingPoints.size(); i++) {
+
+		double v = startingPoints[i][0];
+		double x = startingPoints[i][1];
+
+		// singlet field can take large values if b4 is very small
+		minParams.initialTrustRadius = std::max(10.0, std::abs(0.6*x)); 
+
+		ParameterMap minimum = this->FindLocalMinimum(loopOrder, bDoDim6, v, x, minParams);
 
 /* 		std::cout << "\nMinimum at" << "\n";
 		PrintMap(minimum);
@@ -326,58 +422,6 @@ ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, 
 		// std::cout << "! Imaginary part in free energy\n";
 		warnings++;
 	}
-
-	// DEBUG: print mass eigenvalues at the global minimum
-	//this->SetBackgroundFields(GetFromMap(globalMinimum, "v"), GetFromMap(globalMinimum, "x"));
-	//std::cout << scale << " v=" << v << " x=" << x << " theta=" << theta << " " << mh1sq << " " << mh2sq << " " << mGsq << " " << mGpmsq << " " << mWsq << "\n";
-	//std::cout << "re = " << re << " im = " << im << ". Z2 symmetric? "<< bIsZ2Symmetric << "\n";
-
-	//TestDiagrams(GetFromMap(globalMinimum, "v"), GetFromMap(globalMinimum, "x"));
-	//std::cout << "\n";
-
-/*
-	double xmin = 2.43746;
-	for (double vmin=0.02; vmin<0.04; vmin+=0.002) {
-		this->SetBackgroundFields(vmin, xmin);
-		std::cout << scale << " v=" << vmin << " x=" << xmin << " theta=" << theta << " " << mh1sq << " " << mh2sq << " " << mGsq << " " << mGpmsq << " " << mWsq << "\n";
-		TestDiagrams(vmin, xmin);
-		std::cout << "\n";
-	}
-*/
-	
-	/*
-	// Try global minimization? 
-
-	auto VeffValue = [&](dlib::matrix<double, 0, 1> vevs) {
-		auto v = vevs(0);
-		auto x = vevs(1); 
-		return real( EvaluatePotentialAsDouble(v, x, loopOrder, bDoDim6) );
-	};
-
-
-	Float singletLowerBound = -1000;
-	if (bIsZ2Symmetric) {
-		singletLowerBound = 0.0;
-	}
-
-	auto result = dlib::find_min_global(VeffValue, 
-                                  {1e-6, singletLowerBound}, // lower bounds
-                                  {1000, 1000}, // upper bounds
-                                  std::chrono::milliseconds(5000) // run this long
-                                  );
-	double v = result.x(0);
-	double x = result.x(1);
-	// Calculate Veff once more in the minimum to get possible imag part
-	Complex Veff = EvaluatePotential(v, x, loopOrder, bDoDim6);
-	double re = real(Veff);
-	double im = imag(Veff);
-
-	ParameterMap globalMinimum;
-	globalMinimum["v"] = v;
-	globalMinimum["x"] = x;
-	globalMinimum["Veff.re"] = re;
-	globalMinimum["Veff.im"] = im;
-	*/
 
 	return globalMinimum;
 }
