@@ -19,6 +19,15 @@
 #define EULERGAMMA 0.57721566490153286060
 #define GLAISHER 1.28242712910062263687
 
+// Debug printing macro
+#ifdef DEBUG_MODE
+#define DEBUG(x) std::cout << x << std::endl
+#else
+#define DEBUG(x)
+#endif
+
+
+
 // Map for storing string, double pairs. Used for practically all action parameter storage and access
 using ParameterMap = std::map<std::string, double>;
 

@@ -41,6 +41,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     	## This flag is needed also during linking so add_compile_options doesn't do the trick apparently
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 		# no optimization here since it can interfere with profiling
+		## Enable debugging preprocessor flag in the code
+		add_compile_definitions(DEBUG_MODE)
     endif()
     
     if(CMAKE_BUILD_TYPE STREQUAL "Release")

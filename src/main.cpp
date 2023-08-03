@@ -189,8 +189,9 @@ int main() {
 				if ( abs( vNew / sqrt(T) - vByT) > sensitivity) 
 				{
 					warningsDerivatives++;
-					std::cout << "!!! Warning: Higgs condensate at T = " << T << ". New minimum is at (v, x) = (" << vNew << ", " << xNew 
-								<< "), used to be (" << v << ", " << x << ")\n";
+					(void)xNew;
+					DEBUG("!!! Warning: Higgs condensate at T = " << T << ". New minimum is at (v, x) = (" << vNew << ", " << xNew 
+								<< "), used to be (" << v << ", " << x << ")");
 				}
 
 				phisq = ( GetFromMap(newMinimum, "Veff.re") - GetFromMap(minimum, "Veff.re") ) / (msqPhi_new - msqPhi);	
@@ -231,7 +232,7 @@ int main() {
 				{"warningsMinimization", warningsMinimization},
 				{"warningsDerivatives", warningsDerivatives}
 			};	
-			scanner.resultsForT.push_back(results); // slow in principle?
+			scanner.resultsForT.push_back(results);
 
 			// Some optimization if we don't care about the v = 0 phase
 

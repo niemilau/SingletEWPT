@@ -360,9 +360,10 @@ ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, b
 			minParams.maxFunctionEvaluations    // max number of objective function evaluations
 		);
 	} catch (dlib::bobyqa_failure& exc) {
-		std::cout << "!!! Exception thrown in FindLocalMinimum():\n";
-		std::cout << exc.what() << "\n";
-		std::cout << "Reached point (v, x) = (" << minimum(0) << ", " << minimum(1) << ")\n\n";
+		// Only print the exceptions in debug mode, otherwise there's too much spam. Warning flag is always toggled though 
+		DEBUG("!!! Exception thrown in FindLocalMinimum():");
+		DEBUG(exc.what());
+		DEBUG("Reached point (v, x) = (" << minimum(0) << ", " << minimum(1) << ")\n\n");
 		warnings++;
 	}
 	// Result goes into 'minimum'
