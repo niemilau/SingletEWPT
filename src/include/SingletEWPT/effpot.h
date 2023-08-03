@@ -16,6 +16,16 @@
 using ELoopOrderVeff = ELoopOrder;
 
 
+// parameters for BOBYQA minimization
+struct MinimizationParams {
+
+	// These values seem to work pretty well in generic situations
+	double initialTrustRadius = 10;
+	double stoppingTrustRadius = 1e-4;
+	double maxFunctionEvaluations = 1000;
+};
+
+
 /* Class for computing the potential using user-specified complex number type (double, float, multiprecision etc) */
 template <typename Complex>
 class EffPot {
@@ -84,7 +94,7 @@ public:
 		c24 = GetFromMap(params3D, "c24");
 
 		// Z2 symmetric model?
-		double smallNumber = 1e-5;
+		double smallNumber = 1e-6;
 		bIsZ2Symmetric = (abs(b1) < smallNumber && abs(b3) < smallNumber && abs(a1) < smallNumber); 
 	}
 
@@ -155,16 +165,28 @@ public:
 	std::vector<double> FieldShiftsDim6(Float v, Float x);
 
 
-	// Analytically finds all minima of the tree-level potential so that v,x are real and v >= 0
-	std::vector<double> TreeLevelMinima() const;
+	/* Analytically finds all minima of the tree-level potential so that v,x are real and v >= 0. */
+	std::vector<std::array<double, 2>> TreeLevelMinima() const;
 
 	/* Global minimization. Looks for several local minima (based on intuitive guesses) and takes the deepest of those. 
 	Works with doubles, which get converted to Complex for internal computations */
 	ParameterMap FindGlobalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6);
 	
 	// Find a local minimum with initial guess (v0, x0). Returns doubles.
-	ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0);
+	ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams);
 
+	// Call FindLocalMinimum with default MinimizationParams struct
+	inline ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0) {
+		return FindLocalMinimum(loopOrder, bDoDim6, v0, x0, MinimizationParams());	
+	}
+
+private:
+	/* Return set of (v,x) pairs to use as starting points for FindGlobalMinimum(). 
+	This includes at least the tree-level extrema of the potential 
+	and possibly some hand-picked points corresponding to symmetric, Higgs, singlet phases (if not included in the former) */ 
+	std::vector<std::array<double, 2>> InitialSearchPoints() const;
+
+public:
 
 	/* 2-loop diagrams. These are defined in effpot_2loop.tpp */
 

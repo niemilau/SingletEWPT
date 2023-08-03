@@ -177,13 +177,7 @@ public:
 
     void StartTemperatureLoop() {
         resultsForT.clear();
-        // Initialize the T-results vector to correct size
-        /*
-        const int NTEMPERATURE = 1 + ceil( 
-            ( GetFromMap(scanningRange, "T_max") - GetFromMap(scanningRange, "T_min") ) / GetFromMap(scanningRange, "T_delta")
-        );
-        resultsForT.resize(NTEMPERATURE);
-        */
+        resultsForT.reserve(10000);
     }
 
     /* Minimize the T=0 effective potential and check if EW minimum is the global one.

@@ -2,6 +2,7 @@
 #define EFFPOT_T0_H
 
 #include "common.h"
+#include "effpot.h"
 
 // dlib library provides methods for finding function minima 
 #include <dlib/optimization.h>
@@ -13,7 +14,7 @@
 // Loop order for the potential. Using a separate typename in case this gets extended later 
 using ELoopOrderVeff = ELoopOrder;
 
-// Much of this is copy-pasted from effpot.h. Would be better to use eg. inheritance, but making it work nicely would require
+// Much of this is copy-pasted from effpot.h. Would be better to use eg. interfaces, but making it work nicely would require
 // a lot of code refactorization... 
 
 
@@ -39,6 +40,8 @@ private:
 	Float mWsq, mZsq;
 	// Top quark mass (field dependent)
 	Float mtsq;
+	
+	bool bIsZ2Symmetric;
 
 public:
 
@@ -68,6 +71,10 @@ public:
 		b4 = GetFromMap(params, "b4");
 		a1 = GetFromMap(params, "a1");
 		a2 = GetFromMap(params, "a2");
+
+		// Z2 symmetric model?
+		double smallNumber = 1e-6;
+		bIsZ2Symmetric = (abs(b1) < smallNumber && abs(b3) < smallNumber && abs(a1) < smallNumber); 
 	}
 
 	// Fix background fields and calculate mass eigenvalues and theta
@@ -109,29 +116,30 @@ public:
 		return (std::complex<double>)Veff;
 	}
 
-	private:
-	// Struct for passing data to wrapper functions
-	struct DataWrapper {
-		ELoopOrderVeff loopOrder;
-		EffPotT0<Complex> *ptrToObject;
-	};
-
 public:
-	/* Static wrapper function for NLOPT minimization routines. x contains field values, grad contains gradient info (not used ATM)
-	and data will be cast to */
-	static double EvaluatePotentialWrapper(const std::vector<double>& x, std::vector<double>& grad, void* data) {
-		(void)grad;
-		DataWrapper* dataWrapper = static_cast<DataWrapper*>(data);
-		return real( dataWrapper->ptrToObject->EvaluatePotentialAsDouble(x[0], x[1], dataWrapper->loopOrder) );
-	}
-	
+
+	/* Analytically finds all extrema of the tree-level potential so that v,x are real and v >= 0. 
+	Does not distinguish between minima/maxima but does not include saddle points. */
+	std::vector<std::array<double, 2>> TreeLevelMinima() const;
 
 	/* Global minimization. Looks for several local minima (based on intuitive guesses) and takes the deepest of those. 
 	Works with doubles, which get converted to Complex for internal computations */
 	ParameterMap FindGlobalMinimum(const ELoopOrderVeff loopOrder);
 	
 	// Find a local minimum with initial guess (v0, x0). Returns doubles.
-	ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, double v0, double x0);
+	ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, double v0, double x0, const MinimizationParams &minParams);
+
+	// Call FindLocalMinimum with default MinimizationParams struct
+	inline ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, double v0, double x0) {
+		return FindLocalMinimum(loopOrder, v0, x0, MinimizationParams());	
+	}
+
+private:
+	/* Return set of (v,x) pairs to use as starting points for FindGlobalMinimum(). 
+	This includes at least the tree-level extrema of the potential 
+	and possibly some hand-picked points corresponding to symmetric, Higgs, singlet phases (if not included in the former) */ 
+	std::vector<std::array<double, 2>> InitialSearchPoints() const;
+
 
 	// 4D integral for 1-loop Veff: J4(m^2) = 1/2 \int \ln(p^2 + m^2). Finite part only
 	Complex J4(Float msq) {
