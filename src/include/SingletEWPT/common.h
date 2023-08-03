@@ -21,7 +21,7 @@
 
 // Debug printing macro
 #ifdef DEBUG_MODE
-#define DEBUG(x) std::cout << x << std::endl
+#define DEBUG(x) std::cout << x << std::endl;
 #else
 #define DEBUG(x)
 #endif
@@ -88,11 +88,18 @@ T GetFromMap(const std::map<std::string, T> &map, const std::string &findMe) {
 }
 
 
-// Print a simple str, double map
+// Print a simple str, double map to stdout
 inline void PrintMap(const ParameterMap &map) {
+
     for(const auto& elem : map) {
 		std::cout << elem.first << " " << elem.second << "\n";
 	}
+}
+
+
+inline bool FileExists(const std::string& fname) {
+    std::ifstream f(fname.c_str());
+    return f.good();
 }
 
 #endif

@@ -6,96 +6,6 @@
 #include "renormalization.h"
 
 
-/* Class ParameterGrid - The grid over which a parameter is varied in scanning. [min, max], inclusive on both ends.
-Can be log-scale (base 10). */
-class ParameterGrid {
-
-private:
-    bool bLogScale = false;
-    // Uniform grid spacing
-    double uniformDelta;
-    // For log scale: now the grid points A_i are so that log10 A_(i+1) - log10 A_i = const = b. Store here 10^b.
-    double logScaleFactor = 10;
-
-    // How many points in the range (so there will be len-1 bins)
-    int len;
-
-public:
-
-    double min, max;
-
-    inline int Length() const { return this->len; }
-
-    ParameterGrid() {}
-
-    /* Construct a grid with uniform spacing delta. If logScalePoints > 1, will instead use a log-scale grid with this many points. 
-    For log-grids the delta is not used. */ 
-    ParameterGrid(double minIn, double maxIn, double delta, int logScalePoints) {
-        this->min = minIn;
-        this->max = maxIn;
-        this->uniformDelta = delta;
-        if (delta <= 0) {
-            Die("Cannot have delta <= 0!!\n", 862);
-        }
-
-        if (logScalePoints > 1 && abs(max - min) > 1e-14) {
-            this->bLogScale = true;
-            this->len = logScalePoints;
-        } else {
-            this->bLogScale = false;
-            this->len = 1 + (max - min) / uniformDelta;
-        }
-        
-
-        if (bLogScale && (min <= 0 || max <= 0)) {
-            Die("Negative start value in parameter range, cannot use log-scale!!\n", 863);
-        }
-
-        if (bLogScale) {
-            // Calculate the log-scale grid spacing 
-            double b = (log10(max) - log10(min)) / len;
-            logScaleFactor = pow(10.0, b); 
-        }
-
-    } // End constructor
-    
-    // Return next point in the grid
-    double GetNextPoint(double current) const {
-        
-        double next;
-        if (bLogScale) {
-            // A_(i+1) = 10^b A_i
-            next = current * logScaleFactor;
-        } else {
-            next = current + uniformDelta;
-        }
-
-        // Dodge floating point rounding
-        if (abs(next - max) < 1e-14)
-            next = max;
-
-        return next;
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, const ParameterGrid &grid) {
-        std::string header;
-        double spacing;
-        if (grid.bLogScale) {
-            header = "Log10 scale grid";
-            spacing = grid.logScaleFactor;
-        }
-        else {
-            header = "Uniform grid";
-            spacing = grid.uniformDelta;
-        }
-        out << "{ " << header << ": min = " << grid.min << " , max = " << grid.max 
-                    << " , delta = " << spacing << " , points = " << grid.len;
-        out << " }\n";
-        return out;
-    }
-    
-};
-
 
 /* Class Scanner - Contains control parameters for scanning, eg. parameter ranges and various options */
 class Scanner {
@@ -120,6 +30,11 @@ private:
     // Only report phase transitions where Higgs field jumps from v=0 to nonzero (or vice versa)?
     bool bOnlySearchEWPT = false;
 
+    
+    // Make a grid [min, max] with uniform spacing delta, inclusive
+    std::vector<double> MakeLinearGrid(double min, double max, double delta);
+    // Read numbers from file (first column only)
+    std::vector<double> ReadNumbersFromFile(std::string fname);
 
 public:
     Scanner(std::string configFileName) {
@@ -154,10 +69,13 @@ public:
         // Scanning ranges. Also count how many parameter points we have
         long points = 1;
         for (auto const& x : scanningRange) {
-            std::cout << "Range " << x.first << ":\n";
-            std::cout << x.second;
-            if (x.first != "T") {
-                points *= x.second.Length(); 
+            std::string parameterName = x.first;
+            std::vector<double> values = x.second;
+
+            std::cout << "Range " << parameterName << ": [" 
+                        << values.front() << ", " <<  values.back() <<  "], " << values.size() << " points\n";
+            if (parameterName!= "T") {
+                points *= values.size(); 
             }
         }
         std::cout << points << " parameter points in total (not counting the T-loop)\n";
@@ -202,7 +120,7 @@ public:
     // Container for storing results at each temperature (Veff value, minimum location etc)
     std::vector<ParameterMap> resultsForT;
 
-    std::map<std::string, ParameterGrid> scanningRange;
+    std::map<std::string, std::vector<double>> scanningRange;
     ELoopOrder loopOrderMS;
     ELoopOrder loopOrderVeff;
     ELoopOrder loopOrderVeffT0;

@@ -1,9 +1,25 @@
 #include "scanner.h"
 
+std::vector<double> Scanner::MakeLinearGrid(double min, double max, double delta) {
+	std::vector<double> values;
+	values.reserve(std::abs((max-min) / delta));
 
-void Scanner::ReadScannerParams(std::string fname) {
+	// Using some trickery for upper bound here to dodge rounding errors
+	for (double x = min; x <= max + 0.01*delta; x += delta) {
+		values.push_back(x);
+	}
+	return values;
+}
 
-	std::fstream paramFile;
+std::vector<double> Scanner::ReadNumbersFromFile(std::string fname) {
+	Die("TODO!!", 42131);
+    return std::vector<double>();
+}
+
+void Scanner::ReadScannerParams(std::string fname)
+{
+
+    std::fstream paramFile;
 	paramFile.open(fname);
 
 	if (!paramFile.is_open()) {
@@ -95,44 +111,29 @@ void Scanner::ReadScannerParams(std::string fname) {
 	}
 
 	// This leaves only the parameter scanning ranges
-	this->scanningRange.insert( { "mh2", ParameterGrid(
-									GetFromMap(nums, "mh2_min"),
-									GetFromMap(nums, "mh2_max"),
-									GetFromMap(nums, "mh2_delta"),
-									GetFromMap(nums, "mh2_logScalePoints")
-	)} );
-	this->scanningRange.insert( { "a2", ParameterGrid(
-									GetFromMap(nums, "a2_min"),
-									GetFromMap(nums, "a2_max"),
-									GetFromMap(nums, "a2_delta"),
-									GetFromMap(nums, "a2_logScalePoints")
-	)} );
-	this->scanningRange.insert( { "b3", ParameterGrid(
-									GetFromMap(nums, "b3_min"),
-									GetFromMap(nums, "b3_max"),
-									GetFromMap(nums, "b3_delta"),
-									GetFromMap(nums, "b3_logScalePoints")
-	)} );
-	this->scanningRange.insert( { "b4", ParameterGrid(
-									GetFromMap(nums, "b4_min"),
-									GetFromMap(nums, "b4_max"),
-									GetFromMap(nums, "b4_delta"),
-									GetFromMap(nums, "b4_logScalePoints")
-	)} );
-	this->scanningRange.insert( { "sinTheta", ParameterGrid(
-									GetFromMap(nums, "sinTheta_min"),
-									GetFromMap(nums, "sinTheta_max"),
-									GetFromMap(nums, "sinTheta_delta"),
-									GetFromMap(nums, "sinTheta_logScalePoints")
-	)} );
+	std::vector<double> range;
 
+	auto SetParameterRange = [&](const std::string &name) {
+		// Try to read the values from file first (name eg. range_a2)
+		std::string fileName = "range_" + name;
+		std::vector<double> values;
+		if (FileExists(fileName)) {
+			std::cout << "Reading " << name << " range from file " << fileName << "\n";
+			values = ReadNumbersFromFile(fileName);
+		} else {
+			// Just use a linear grid based on number given in parameters file
+			values = MakeLinearGrid(GetFromMap(nums, name+"_min"), GetFromMap(nums, name+"_max"), GetFromMap(nums, name+"_delta"));
+		}
+		this->scanningRange.insert( { name, values });
 
-	this->scanningRange.insert( { "T", ParameterGrid(
-									GetFromMap(nums, "T_min"),
-									GetFromMap(nums, "T_max"),
-									GetFromMap(nums, "T_delta"),
-									GetFromMap(nums, "T_logScalePoints")
-	)} );
+	};
+
+	SetParameterRange("mh2");
+	SetParameterRange("a2");
+	SetParameterRange("b3");
+	SetParameterRange("b4");
+	SetParameterRange("sinTheta");
+	SetParameterRange("T");
 
 }
 
@@ -216,7 +217,7 @@ void Scanner::FindTransitionPoints() {
 			// Latent heat. Need dV/dT on both sides of the transition
 			if (i-2 < 0 || i+1 >= static_cast<int>(resultsForT.size())) {
 				warningsDerivatives++;
-				std::cout << "!!! Not enough data points for calculating latent heat at Tc = " << Tc << "\n";
+				DEBUG("!!! Not enough data points for calculating latent heat at Tc = " << Tc);
 			} else {
 				// Low-T derivative
 				ParameterMap pOther = resultsForT[i-2];
@@ -376,19 +377,6 @@ void Scanner::WriteDataLabels() {
 	f << "8 perturbativity\n";
 	f.close();
 
-
-
-	/*
-	// Labels for dim-6 error estimate 
-	f.open("labels_dim6");
-	f << "1 mh1\n";
-	f << "2 mh2\n";
-	f << "3 a2\n";
-	f << "4 b4\n";
-	f << "5 sinTheta\n";
-	f << "6 b3\n";
-	f.close();
-	*/
 }
 
 
