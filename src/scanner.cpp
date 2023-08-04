@@ -11,11 +11,6 @@ std::vector<double> Scanner::MakeLinearGrid(double min, double max, double delta
 	return values;
 }
 
-std::vector<double> Scanner::ReadNumbersFromFile(std::string fname) {
-	Die("TODO!!", 42131);
-    return std::vector<double>();
-}
-
 void Scanner::ReadScannerParams(std::string fname)
 {
 
@@ -119,7 +114,7 @@ void Scanner::ReadScannerParams(std::string fname)
 		std::vector<double> values;
 		if (FileExists(fileName)) {
 			std::cout << "Reading " << name << " range from file " << fileName << "\n";
-			values = ReadNumbersFromFile(fileName);
+			values = ReadArrayFromFile(fileName);
 		} else {
 			// Just use a linear grid based on number given in parameters file
 			values = MakeLinearGrid(GetFromMap(nums, name+"_min"), GetFromMap(nums, name+"_max"), GetFromMap(nums, name+"_delta"));
@@ -134,7 +129,6 @@ void Scanner::ReadScannerParams(std::string fname)
 	SetParameterRange("b4");
 	SetParameterRange("sinTheta");
 	SetParameterRange("T");
-
 }
 
 void Scanner::FindTransitionPoints() {
@@ -262,7 +256,7 @@ void Scanner::FindTransitionPoints() {
 			if (ind_new < 0 || ind_new >= static_cast<int>(resultsForT.size())) {
 				// index out of bounds, can't calculate dim-6 error
 				warningsDerivatives++;
-				std::cout << "! Can't calculate dim-6 error; Tc was " << Tc << "\n";
+				DEBUG("! Can't calculate dim-6 error; Tc was " << Tc);
 			} else {
 				ParameterMap params_for_dim6 = resultsForT[ind_new];
 				vShiftDim6 = GetFromMap(params_for_dim6, "vShiftDim6");

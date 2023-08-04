@@ -33,8 +33,6 @@ private:
     
     // Make a grid [min, max] with uniform spacing delta, inclusive
     std::vector<double> MakeLinearGrid(double min, double max, double delta);
-    // Read numbers from file (first column only)
-    std::vector<double> ReadNumbersFromFile(std::string fname);
 
 public:
     Scanner(std::string configFileName) {
