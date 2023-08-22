@@ -1,46 +1,43 @@
 #### This is a parameter file for SM + real singlet scanner ####
 
-## Specify ranges for parameter scans: max, min and spacing
+## Specify ranges for parameter scans: max, min and spacing.
+# This will produce a uniform grid for each parameter
 # if you want to keep some parameter fixed, just set max = min
 # NB! using delta = 0 for any parameter results in an infinite loop, so avoid that
 
-### TODO better syntax, and parsing in the code
+## For more specialized scanning (eg. logarithmic) you can write the parameter values to a file with appropriate name:
+# range_a2 for a2 etc. Each line in the file should have one just one value. 
+# Note that the program will prioritize these files when setting up scanning ranges
 
 # M_h2 (GeV)
 mh2_min				600
 mh2_max				600
 mh2_delta			5
-mh2_logScalePoints		0
 
 # a2
 a2_min				4.0
 a2_max				4.0
 a2_delta			0.1
-a2_logScalePoints		0
 
 # sinTheta (this needs to be within |sinTheta| < 1/sqrt(2) = 0.707... )
 sinTheta_min			0.12
 sinTheta_max			0.12
 sinTheta_delta			0.02
-sinTheta_logScalePoints		0
 
 # b3 (GeV)
 b3_min				-75
 b3_max				-75
 b3_delta			50
-b3_logScalePoints		0
 
 # b4
 b4_min				0.5
 b4_max				0.5
 b4_delta			0.25
-b4_logScalePoints		0
 
 # Temperature (GeV)
 T_min				60
 T_max				160
 T_delta				0.1
-T_logScalePoints		0
 
 loopOrderMS			1
 

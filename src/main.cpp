@@ -16,7 +16,6 @@ typedef std::chrono::high_resolution_clock::time_point TimeVar;
 // Multiprecision is too slow to use in real scans... double is 15 digits and running a test scan over T (151 values) takes 0.120s. 
 // With multiprecision 16 digits it takes 6.255s, which is 52 times more! So use standard double whenever possible.
 
-
 //int main(int argc, char *argv[]) {
 int main() {
 
@@ -24,6 +23,8 @@ int main() {
 
 	/* Read parameter ranges and other options */
 	Scanner scanner("parameters");
+
+	std::string statusFileName = "status";
 
     std::cout << "====== Scanner options =====\n";
 	scanner.PrintScanner();
@@ -38,30 +39,18 @@ int main() {
 
 	TimeVar startTime = TimeNow();
 
-	/** Parameter loops. TODO do this more elegantly with recursion, probably... **/
-	// Note that here I'm just copying the scanning ranges from scanner and using the copies. 
-	// Would be better to do this within the scanner class
-
-	double mh2, a2, sinTheta, b3, b4;
-	ParameterGrid range_mh2 = GetFromMap(scanner.scanningRange, "mh2");
-	ParameterGrid range_a2 = GetFromMap(scanner.scanningRange, "a2");
-	ParameterGrid range_sinTheta = GetFromMap(scanner.scanningRange, "sinTheta");
-	ParameterGrid range_b3 = GetFromMap(scanner.scanningRange, "b3");
-	ParameterGrid range_b4 = GetFromMap(scanner.scanningRange, "b4");
-
-	ParameterGrid range_T = GetFromMap(scanner.scanningRange, "T");
+	/****** Parameter loops ******/
 
 	// Keep track of how many parameter points we've visited. Used for evaluation control
 	long pointCount = 0;
-	long checkpointInterval = 1000;
+	long checkpointInterval = 10000;
 
-	for (mh2 = range_mh2.min; mh2 <= range_mh2.max; mh2 = range_mh2.GetNextPoint(mh2)) 
-	for (a2 = range_a2.min; a2 <= range_a2.max; a2 = range_a2.GetNextPoint(a2)) 
-	for (sinTheta = range_sinTheta.min; sinTheta <= range_sinTheta.max; sinTheta = range_sinTheta.GetNextPoint(sinTheta)) 
-	for (b3 = range_b3.min; b3 <= range_b3.max; b3 = range_b3.GetNextPoint(b3)) 
-	for (b4 = range_b4.min; b4 <= range_b4.max; b4 = range_b4.GetNextPoint(b4)) 
+	for (double const &mh2 : GetFromMap(scanner.scanningRange, "mh2") ) 
+	for (double const &sinTheta : GetFromMap(scanner.scanningRange, "sinTheta") ) 
+	for (double const &a2 : GetFromMap(scanner.scanningRange, "a2") )  
+	for (double const &b3 : GetFromMap(scanner.scanningRange, "b3") ) 
+	for (double const &b4 : GetFromMap(scanner.scanningRange, "b4") ) 
 	{
-
 		scanner.currentInput = {
 			{"Mh1", ExperimentalInput::MH},
 			{"Mh2", mh2},
@@ -74,9 +63,9 @@ int main() {
 		pointCount++;
 		if (pointCount % checkpointInterval == 0) {
 			double seconds = Duration(TimeNow() - startTime);
-			std::cout << pointCount << " points done, time taken so far: " << seconds << "s. Current parameter point:\n";
+			std::cout << pointCount << " points done, time taken so far: " << seconds << "s. Current parameters:\n";
 			PrintMap(scanner.currentInput);
-			std::cout << std::flush;
+			std::cout << std::endl;
 		}
 
 		// For optimization at v = 0
@@ -102,7 +91,7 @@ int main() {
 
 		/******** Now the T-loop ********/
 		scanner.StartTemperatureLoop();
-		for (double T = range_T.min; T <= range_T.max; T = range_T.GetNextPoint(T)) 
+		for (double const &T : GetFromMap(scanner.scanningRange, "T") ) 
 		{
 
 			// RG running will not work if you forget to set this here!

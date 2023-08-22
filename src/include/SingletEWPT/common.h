@@ -21,7 +21,7 @@
 
 // Debug printing macro
 #ifdef DEBUG_MODE
-#define DEBUG(x) std::cout << x << std::endl
+#define DEBUG(x) std::cout << x << std::endl;
 #else
 #define DEBUG(x)
 #endif
@@ -88,11 +88,50 @@ T GetFromMap(const std::map<std::string, T> &map, const std::string &findMe) {
 }
 
 
-// Print a simple str, double map
+// Print a simple str, double map to stdout
 inline void PrintMap(const ParameterMap &map) {
+
     for(const auto& elem : map) {
 		std::cout << elem.first << " " << elem.second << "\n";
 	}
 }
+
+
+inline bool FileExists(const std::string& fname) {
+    std::ifstream f(fname.c_str());
+    return f.good();
+}
+
+
+/* Reads numbers from file, line by line, and puts them in a vector. 
+Will not work for files with more than 1 column */
+inline std::vector<double> ReadArrayFromFile(const std::string& fileName) {
+    std::vector<double> res;
+    std::ifstream file(fileName);
+    
+    res.reserve(100);
+    
+    if (!file.is_open()) {
+        std::cout << "!! Error opening file " << fileName << std::endl;
+        return res;
+    }
+    
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        double value;
+        
+        if (!(iss >> value)) {
+            std::cerr << "!! Error parsing line " << line << std::endl;
+            continue;
+        }
+        
+        res.push_back(value);
+    }
+    
+    file.close();
+    return res;
+}
+
 
 #endif
