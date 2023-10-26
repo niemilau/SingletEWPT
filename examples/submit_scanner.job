@@ -1,0 +1,16 @@
+# This is the scanner job file for INPAC-Cluster
+
+universe = vanilla
+# The path of SingletEWPT
+executable = /lustre/theory/xiaguotao/SingletEWPT/build/bin/SingletEWPT
+
+should_transfer_files = NO
+
+Log    = SingletEWPT.log
+
+Output = SingletEWPT.log
+
+#Error  = SingletEWPT.err.
+
+
+queue
