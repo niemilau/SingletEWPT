@@ -1,3 +1,4 @@
+#!/Users/Osmanthus/opt/anaconda3/bin/python3
 import numpy as np
 import argparse
 
@@ -19,6 +20,10 @@ def makeLogRange(min: float, max: float, npoints: int) -> np.ndarray:
 def makeUniformRange(min: float, max: float, npoints: int) -> np.ndarray:
     return np.linspace(min, max, npoints)
 
+## Random 
+def makeRandomRange(min: float, max: float, npoints: int) -> np.ndarray:
+    randomRange = np.random.uniform(min, max, npoints)
+    return np.sort(randomRange)
 
 def makeInputFile(paramName: str, values: np.ndarray) -> None:
     fileName = "range_" + paramName
@@ -34,7 +39,7 @@ def main():
     parser.add_argument('min', type=float, metavar="Starting value (inclusive)")
     parser.add_argument('max', type=float, metavar="Ending value (inclusive)")
     parser.add_argument('npoints', type=int, metavar="Number of points")
-    parser.add_argument('--type', type=str, metavar="Type of value range to use. Uniform by default.", default='uniform', choices=['uniform', 'log10'])
+    parser.add_argument('--type', type=str, metavar="Type of value range to use. Uniform by default.", default='uniform', choices=['uniform', 'log10', 'random'])
 
     args = parser.parse_args()
 
@@ -42,6 +47,8 @@ def main():
         values = makeUniformRange(args.min, args.max, args.npoints)
     elif (args.type == 'log10'):
         values = makeLogRange(args.min, args.max, args.npoints)
+    elif (args.type == 'random'):
+        values = makeRandomRange(args.min, args.max, args.npoints)
 
     makeInputFile(args.name, values)
 
