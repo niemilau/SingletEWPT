@@ -11,7 +11,6 @@ fi
 mh2_min=$1
 mh2_max=$2
 mh2_delta=$3
-
 scanner_job='submit_scanner.job'
 paramfile='parameters'
 
@@ -26,10 +25,6 @@ do
     cd $dir
     for subdir in */
     do
-        if [[ $subdir == "*/" ]]; then
-            continue
-        fi
-
         cd $subdir
 
         if [[ ! -f "$scanner_job" || ! -f "$paramfile" ]]; then
@@ -42,3 +37,49 @@ do
     done
     cd ..
 done
+
+
+
+
+
+
+
+
+: <<'END_COMMENT'
+
+# This is the version to rm -rf some files
+
+if [ "$#" -ne 3 ]; then
+    echo "Usage: <script name> mh2_min mh2_max mh2_delta"
+	exit 1
+fi
+
+mh2_min=$1
+mh2_max=$2
+mh2_delta=$3
+scanner_job='submit_scanner.job'
+paramfile='parameters'
+
+
+for mh2 in $(seq $mh2_min $mh2_delta $mh2_max);
+do
+    dir="mh2-$mh2"
+    if [ ! -d "$dir" ]; then
+  		echo "Error: No directory $dir"
+        continue
+    fi
+    cd $dir
+    for subdir in */
+    do
+        cd $subdir
+        if [[ ! -f "$scanner_job" || ! -f "$paramfile" ]]; then
+  		    echo "Skipping directory $dir$subdir"
+            cd ..
+  		    continue
+	    fi
+        rm -rf temperature_data.dat
+        cd ..
+    done
+    cd ..
+done
+END_COMMENT
