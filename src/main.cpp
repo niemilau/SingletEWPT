@@ -212,7 +212,7 @@ int main() {
 				{"xShiftDim6", fieldShiftsDim6[1]},
 				{"Veff.re", GetFromMap(minimum, "Veff.re")},
 				{"Veff.im", GetFromMap(minimum, "Veff.im")},
-				{"isPerturbative", (int) bIsPerturbative},
+				{"isPerturbative", static_cast<int>(bIsPerturbative)},
 				{"warningsMinimization", warningsMinimization},
 				{"warningsDerivatives", warningsDerivatives}
 			};	
@@ -223,16 +223,18 @@ int main() {
 			// Minimum v/T value before we consider it to be symmetric phase
 			double symmPhaseThreshold = 1e-3;
 
-			if (abs(vByT) > symmPhaseThreshold) bFoundBrokenPhase = true;
+			if (abs(vByT) > symmPhaseThreshold) {
+				bFoundBrokenPhase = true;
+				continue;
+			}
 
 			// Don't apply any v = 0 optimizations if we haven't found the broken phase yet (avoid spurious effects at small T)
 			if (!bFoundBrokenPhase) continue;
 
 			if (bInSymmetricPhase && abs(vByT) > symmPhaseThreshold) {
-				// Now bInSymmetricPhase was set to true at previous T
-				// but current T is no longer in symmetric phase
-				// ==> very weird behavior since we scan from low-T to high-T!
-				// This probably means that the minimization failed in the previous point, so reset counter
+				/* Now bInSymmetricPhase was set to true at a previous T but current T is no longer in symmetric phase
+				==> very weird behavior since we scan from low-T to high-T!
+				This probably means that the minimization failed in the previous point, so reset counter */
 				symmPhasePoints = symmPhasePointsMax;
 				bInSymmetricPhase = false;
 
