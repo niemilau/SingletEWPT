@@ -328,7 +328,7 @@ std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints() const 
 
 // Find a local minimum with initial guess (v0, x0). Returns doubles.
 template <typename Complex>
-ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams) {
+MinimizationResult EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams) {
 
 	using ColumnVector = dlib::matrix<double, 0, 1>;
 
@@ -345,6 +345,8 @@ ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, b
 	double singletLowerBound = -1e10;
 	if (bIsZ2Symmetric) 
 		singletLowerBound = 0.0;
+
+	int warningsLocal = 0;
 
 	//ColumnVector lowerBound{5e-5, singletLowerBound};
 	ColumnVector lowerBound{0, singletLowerBound};
@@ -365,18 +367,19 @@ ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, b
 		DEBUG("!!! Exception thrown in FindLocalMinimum():");
 		DEBUG(exc.what());
 		DEBUG("Reached point (v, x) = (" << minimum(0) << ", " << minimum(1) << ")\n\n");
-		warnings++;
+		warningsLocal++;
 	}
-	// Result goes into 'minimum'
-	ParameterMap res;
-	double v = minimum(0);
-	double x = minimum(1);
-	res["v"] = v;
-	res["x"] = x;
 
-	std::complex<double> val = this->EvaluatePotentialAsDouble(v, x, loopOrder, bDoDim6);
-	res["Veff.re"] = real(val);
-	res["Veff.im"] = imag(val);
+	// Result goes into 'minimum'
+
+	MinimizationResult res;
+	res.v = minimum(0);
+	res.x = minimum(1);
+
+	// Evaluate once more to get possible imaginary parts
+	res.veffValue = EvaluatePotentialAsDouble(v, x, loopOrder, bDoDim6);
+
+	res.warnings = warningsLocal;
 	
 	return res;
 }
@@ -388,11 +391,10 @@ Works with doubles, which get converted to Complex for internal computations */
 template <typename Complex>
 ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6) {
 
-
 	std::vector<std::array<double, 2>> startingPoints = InitialSearchPoints();
 
 	// Our current result for the global minimum
-	ParameterMap globalMinimum;
+	MinimizationResult globalMinimum;
 
 	MinimizationParams minParams;
 
@@ -404,28 +406,34 @@ ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, 
 		// singlet field can take large values if b4 is very small
 		minParams.initialTrustRadius = std::max(10.0, std::abs(0.6*x)); 
 
-		ParameterMap minimum = this->FindLocalMinimum(loopOrder, bDoDim6, v, x, minParams);
-
-/* 		std::cout << "\nMinimum at" << "\n";
-		PrintMap(minimum);
-		std::cout << "\n"; */
+		MinimizationResult minimum = FindLocalMinimum(loopOrder, bDoDim6, v, x, minParams);
 
 		// Check if the present minimum is deeper than what we found earlier
-		double val = GetFromMap(minimum, "Veff.re");
-		if (i == 0 || val < GetFromMap(globalMinimum, "Veff.re")) {
+		const double val = minimum.veffValue.re;
+		if (i == 0 || val < globalMinimum.veffValue.re) {
 			globalMinimum = minimum;
 		}
 	}
 
 	// Potential should be real in its minima. Print warning if there is a relatively large imag part
-	double re = GetFromMap(globalMinimum, "Veff.re");
-	double im = GetFromMap(globalMinimum, "Veff.im");
+	const double re = globalMinimum.veffValue.re;
+	const double im = globalMinimum.veffValue.im;
 	if (abs(im/re) > 1e-5) {
 		// std::cout << "! Imaginary part in free energy\n";
 		warnings++;
 	}
 
-	return globalMinimum;
+	// Warn if the minimization threw any errors with the global minimum
+	warnings += globalMinimum.warnings;
+
+	// Put result into a map
+	ParameterMap res;
+	res["v"] = globalMinimum.v;
+	res["x"] = globalMinimum.x;
+	res["Veff.re"] = re;
+	res["Veff.im"] = im;
+
+	return res;
 }
 
 template <typename Complex>
