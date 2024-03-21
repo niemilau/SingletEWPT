@@ -302,7 +302,7 @@ std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints() const 
 
 	// Check that we have all sensible points
 	double smallFieldValue = 1e-3;
-	for (auto & point: searchPoints) {
+	for (const auto& point: searchPoints) {
 		double v = point[0];
 		double x = point[1];
 
@@ -316,10 +316,10 @@ std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints() const 
 		searchPoints.push_back({smallFieldValue, smallFieldValue});
 	}
 	if (!bHasHiggsPhase) {
-		searchPoints.push_back({15.0, smallFieldValue});
+		searchPoints.push_back({50.0, smallFieldValue});
 	}
 	if (!bHasSingletPhase) {
-		searchPoints.push_back({smallFieldValue, 10.0});
+		searchPoints.push_back({smallFieldValue, 50.0});
 	}
 
 	return searchPoints;
@@ -340,7 +340,8 @@ ParameterMap EffPot<Complex>::FindLocalMinimum(const ELoopOrderVeff loopOrder, b
 		return real( EvaluatePotentialAsDouble(v, x, loopOrder, bDoDim6) );
 	};
 
-	// BOBYQA minimization from dlib (TODO tune the parameters here)
+	// ---- BOBYQA minimization from dlib
+
 	double singletLowerBound = -1e10;
 	if (bIsZ2Symmetric) 
 		singletLowerBound = 0.0;
