@@ -19,20 +19,12 @@ For dlib, you can either manually install the libraries from http://dlib.net, or
 ### Building the program
 
 ```
-mkdir build
-cd build
-cmake ..
-make
-make install	
+cmake -B build
+cmake --build build
+cmake --install build
 ```
-
-## Debugging
-
-To build debug version and unit tests use the ```-DCMAKE_BUILD_TYPE=Debug``` flag when calling cmake, ie:
-
-```
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-```
-
-Google Test framework is used for unit testing. cmake will attempt to automatically fetch the required libraries. 
 The binaries (main program and unit tests) go to ./bin/ inside your build directory.
+
+For a debug build, configure with the ```-DCMAKE_BUILD_TYPE=Debug``` flag.
+ 
+
