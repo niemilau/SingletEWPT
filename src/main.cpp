@@ -164,12 +164,12 @@ int main() {
 				// Better results by reducing initial trust radius?
 				MinimizationParams minParams;
 				minParams.initialTrustRadius = 5;
-				ParameterMap newMinimum = effPotNew.FindLocalMinimum(scanner.loopOrderVeff, false, v, x, minParams);
+				MinimizationResult newMinimum = effPotNew.FindLocalMinimum(scanner.loopOrderVeff, false, v, x, minParams);
 
 				// Sensibility check
 				double sensitivity = 0.5;
-				double vNew = GetFromMap(newMinimum, "v");
-				double xNew = GetFromMap(newMinimum, "x");
+				double vNew = newMinimum.v;
+				double xNew = newMinimum.x;
 				if ( abs( vNew / sqrt(T) - vByT) > sensitivity) 
 				{
 					warningsDerivatives++;
@@ -178,7 +178,7 @@ int main() {
 								<< "), used to be (" << v << ", " << x << ")");
 				}
 
-				phisq = ( GetFromMap(newMinimum, "Veff.re") - GetFromMap(minimum, "Veff.re") ) / (msqPhi_new - msqPhi);	
+				phisq = ( newMinimum.veffValue.real() - GetFromMap(minimum, "Veff.re") ) / (msqPhi_new - msqPhi);	
 			}
 
 			// Minimize again with dim-6 included to find relative shift in v/T. Since we do this at all temperatures, 
@@ -190,10 +190,10 @@ int main() {
 
 				bool bDim6 = true;
 				// Find LOCAL minimum near to the original one
-				ParameterMap newMinimum = effPotNew.FindLocalMinimum(scanner.loopOrderVeff, bDim6, v, x);
+				MinimizationResult newMinimum = effPotNew.FindLocalMinimum(scanner.loopOrderVeff, bDim6, v, x);
 
-				double vNew = GetFromMap(newMinimum, "v");
-				double xNew = GetFromMap(newMinimum, "x");
+				double vNew = newMinimum.v;
+				double xNew = newMinimum.x;
 				//std::cout << "(" << vByT << "," << xByT << "); new = (" << vNew/sqrt(T) << "," << xNew/sqrt(T) << ")\n";
  
 				fieldShiftsDim6[0] = (vByT - vNew/sqrt(T)) / vByT;
