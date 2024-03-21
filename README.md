@@ -23,7 +23,7 @@ cmake -B build
 cmake --build build
 cmake --install build
 ```
-The binaries (main program and unit tests) go to ./bin/ inside your build directory.
+The binaries get installed to ```bin/``` in the project root directory. 
 
 For a debug build, configure with the ```-DCMAKE_BUILD_TYPE=Debug``` flag.
  
