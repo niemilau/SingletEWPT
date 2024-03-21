@@ -68,11 +68,6 @@ int main() {
 			std::cout << std::endl;
 		}
 
-		// For optimization at v = 0
-		int symmPhasePointsMax = 4;
-		int symmPhasePoints = symmPhasePointsMax;
-		bool bInSymmetricPhase = false;
-
 		// Calculate MS-bar parameters at Z pole
 		double inputScale = ExperimentalInput::MZ;
 		Renormalization renorm(scanner.currentInput, inputScale);
@@ -91,7 +86,19 @@ int main() {
 
 		/******** Now the T-loop ********/
 		scanner.StartTemperatureLoop();
-		for (double const &T : GetFromMap(scanner.scanningRange, "T") ) 
+
+		/* if bStopAtSymmetricPhase == true, the scanner will stop once v becomes small in the global minimum.
+		But it can happen that at small temperature our high-T approx breaks, and the minimum shifts to v=0.
+		This is clearly not physical since we assumed v != 0 at T = 0. To avoid stopping the scanner,
+		introduce a check that we've been in broken phase at low T before applying the bStopAtSymmetricPhase check. */
+		bool bFoundBrokenPhase = false;
+
+		// For optimization at v = 0
+		int symmPhasePointsMax = 4;
+		int symmPhasePoints = symmPhasePointsMax;
+		bool bInSymmetricPhase = false;
+
+		for (double T : GetFromMap(scanner.scanningRange, "T") ) 
 		{
 
 			// RG running will not work if you forget to set this here!
@@ -118,13 +125,6 @@ int main() {
 			EffPot<Complex> effPot(params3D);
 			ParameterMap minimum = effPot.FindGlobalMinimum(scanner.loopOrderVeff, false);
 
-			// DEBUG 
-			/*
-			std::cout << "\n === T = " << T << " ===\n";
-			PrintMap(params3D);
-			std::cout << effPot.EvaluatePotential(10,-50, ELoopOrder::loop2, false) << "\n";
-			*/ //
-
 			// Keep track of possible issues. Separate these into "minimization", ie those reported by eff. pot. evaluation/minimization,
 			// and "derivatives", ie issues encountered when computing latent heat or condensates etc
 			int warningsMinimization = effPot.warnings;
@@ -135,11 +135,6 @@ int main() {
 			// Convert minimum location to 4D units and normalize by T (=> v/T)
 			double vByT = v / sqrt(T);
 			double xByT = x / sqrt(T);
-
-
-			// DEBUG DEBUG
-			//std::cout << "T = " << T << "; " << std::setprecision(16) << effPot.EvaluatePotential(v, x, scanner.loopOrderVeff, false) 
-			//			<< ", " << effPot.EvaluatePotentialAsDouble(v, x, scanner.loopOrderVeff, false) << "\n";
 
 
 			// Relative VEV shifts due to dim-6 operators 
@@ -223,10 +218,16 @@ int main() {
 			};	
 			scanner.resultsForT.push_back(results);
 
-			// Some optimization if we don't care about the v = 0 phase
+			// ---- Some optimization if we don't care about the v = 0 phase
 
 			// Minimum v/T value before we consider it to be symmetric phase
 			double symmPhaseThreshold = 1e-3;
+
+			if (abs(vByT) > symmPhaseThreshold) bFoundBrokenPhase = true;
+
+			// Don't apply any v = 0 optimizations if we haven't found the broken phase yet (avoid spurious effects at small T)
+			if (!bFoundBrokenPhase) continue;
+
 			if (bInSymmetricPhase && abs(vByT) > symmPhaseThreshold) {
 				// Now bInSymmetricPhase was set to true at previous T
 				// but current T is no longer in symmetric phase
@@ -234,8 +235,9 @@ int main() {
 				// This probably means that the minimization failed in the previous point, so reset counter
 				symmPhasePoints = symmPhasePointsMax;
 				bInSymmetricPhase = false;
-				continue;
+
 			} else if (abs(vByT) < symmPhaseThreshold) {
+
 				bInSymmetricPhase = true;
 				if ( scanner.bStopAtSymmetricPhase) {
 					symmPhasePoints--;
