@@ -409,15 +409,15 @@ ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, 
 		MinimizationResult minimum = FindLocalMinimum(loopOrder, bDoDim6, v, x, minParams);
 
 		// Check if the present minimum is deeper than what we found earlier
-		const double val = minimum.veffValue.re;
-		if (i == 0 || val < globalMinimum.veffValue.re) {
+		const double val = minimum.veffValue.real();
+		if (i == 0 || val < globalMinimum.veffValue.real()) {
 			globalMinimum = minimum;
 		}
 	}
 
 	// Potential should be real in its minima. Print warning if there is a relatively large imag part
-	const double re = globalMinimum.veffValue.re;
-	const double im = globalMinimum.veffValue.im;
+	const double re = globalMinimum.veffValue.real();
+	const double im = globalMinimum.veffValue.imag();
 	if (abs(im/re) > 1e-5) {
 		// std::cout << "! Imaginary part in free energy\n";
 		warnings++;

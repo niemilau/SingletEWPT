@@ -28,10 +28,12 @@ struct MinimizationParams {
 struct MinimizationResult {
 
 	// Value of the potential at the minimum
-	double std::complex<double> veffValue;
-	double v, x; // v = Higgs, x = singlet
+	std::complex<double> veffValue{0.0, 0.0};
+	 // v = Higgs, x = singlet; give some initial values to avoid uninitialization warnings 
+	double v = 250;
+	double x = 100;
 	int warnings = 0;
-}
+};
 
 
 /* Class for computing the potential using user-specified complex number type (double, float, multiprecision etc) */
@@ -181,12 +183,8 @@ public:
 	ParameterMap FindGlobalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6);
 	
 	// Find a local minimum with initial guess (v0, x0). Returns doubles.
-	MinimizationResult FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams);
+	MinimizationResult FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams = MinimizationParams());
 
-	// Call FindLocalMinimum with default MinimizationParams struct
-	inline ParameterMap FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0) {
-		return FindLocalMinimum(loopOrder, bDoDim6, v0, x0, MinimizationParams());	
-	}
 
 private:
 	/* Return set of (v,x) pairs to use as starting points for FindGlobalMinimum(). 
