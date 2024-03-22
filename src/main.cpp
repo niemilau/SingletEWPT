@@ -9,6 +9,8 @@
 // Execution time evaluation
 #include <chrono>
 #include <utility>
+#include <fstream>
+
 typedef std::chrono::high_resolution_clock::time_point TimeVar;
 #define Duration(a) std::chrono::duration_cast<std::chrono::seconds>(a).count()
 #define TimeNow() std::chrono::high_resolution_clock::now()
@@ -129,6 +131,20 @@ int main() {
 			// and "derivatives", ie issues encountered when computing latent heat or condensates etc
 			int warningsMinimization = effPot.warnings;
 			int warningsDerivatives = 0;
+
+			// HACK export the potential for plotting
+			{
+				std::ofstream outfile("Veff_" + std::to_string(T) + ".csv");
+				outfile << "v,x,VeffRe,VeffIm\n";
+
+				for (double v = 0; v <= 50; v += 0.5)
+				for (double x = -50; x <= 50; x += 0.5)
+				{
+					std::complex<double> veffValue = effPot.EvaluatePotentialAsDouble(v, x, scanner.loopOrderVeff, false);
+
+					outfile << v << "," << x << "," << veffValue.real() << "," << veffValue.imag() << "\n";
+				}
+			}
 
 			double v = GetFromMap(minimum, "v");
 			double x = GetFromMap(minimum, "x");
