@@ -79,7 +79,7 @@ def main():
 
             if fname == "submit.job":
                 # TODO should not actually need to copy this since we have the contents stored
-                jobFileLines[jobNameLineIndex] = (f'#SBATCH --job-name="scan{i+1}"')
+                jobFileLines[jobNameLineIndex] = (f'#SBATCH --job-name="scan{i+1}"\n')
                 with open(pathToCopy, "w") as f:
                     f.writelines(jobFileLines)
 
