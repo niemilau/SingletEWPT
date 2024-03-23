@@ -1,7 +1,6 @@
 #include "scanner.h"
 
 #include <map>
-#include <array>
 
 std::vector<double> Scanner::MakeLinearGrid(double min, double max, double delta) {
 	std::vector<double> values;
@@ -155,6 +154,8 @@ void Scanner::ScanningRangesFromFile(const std::string &fname)
         exit(1);
     }
 
+	std::cout << "Reading scanning table from file: " << fname << std::endl;
+
 	/* Table should look like:
 	# mh2,a2,b3,b4,sinTheta
 	1,2,3,4,5
@@ -162,53 +163,54 @@ void Scanner::ScanningRangesFromFile(const std::string &fname)
 	etc. Column order can be anything as long as the header specifies what column is what. */
 
 	// Parse first line
-	std::vector<std::string> columnNames;
 	std::string header;
-	while (std::getline(file, header))
+	std::getline(file, header);
+
+	// skip '#' character at start
+	if (header.length() > 0 && header[0] == '#')
 	{
-		std::stringstream headerStream(header);
-		std::string name;
-		while (std::getline(headerStream, name, ','))
-		{
-			columnNames.push_back(name);
-		}
+		header.erase(0, 1);
 	}
 
-	std::array<std::vector<double>, columnNames.size()> data;	
+	std::vector<std::string> columnNames = SplitString(header, ",");
+	for (size_t i = 0; i < columnNames.size(); i++)
+	{
+		columnNames[i] = TrimString(columnNames[i]);
+	}
+
+	std::vector<std::vector<double>> data;
+	data.resize(columnNames.size());
 
 	std::string line;
 
     while (std::getline(file, line)) 
 	{
-        std::stringstream ss(line);
-        std::string cell;
-        int colIndex = 0;
 
-		while (std::getline(ss, cell, ',')) {
-
-			if (colIndex >= columnNames.size())
-			{
-				std::cerr << "Column mismatch when parsing scan table. Faulty line:\n"
-				std::cerr << line << std::endl;
-				exit(2);
-			}
-
-            std::istringstream iss(cell);
-            double value;
-            iss >> value;
-            data[colIndex].push_back(value);
-            colIndex++;
-        }
+		const std::vector<std::string> values = SplitString(line, ",");
+		
 		// Check that we read right number of columns
-		if (colIndex != columnNames.size())
+		if (values.size() != columnNames.size())
 		{
-			std::cerr << "Column mismatch when parsing scan table. Faulty line:\n"
+			std::cerr << "Column mismatch when parsing scan table. Faulty line:\n";
 			std::cerr << line << std::endl;
-			exit(3);
+			exit(2);
 		}
+
+		for (size_t colIndex = 0; colIndex < values.size(); colIndex++)
+		{
+			data[colIndex].push_back( std::stod(values[colIndex]) );
+		}
+
 	}
 
-	for (int i = 0; i < columnNames.size(); i++)
+	// Remove duplicates from the scanning range vectors. This is easiest after sorting
+	for (std::vector<double>& range : data)
+	{
+		std::sort(range.begin(), range.end());
+		range.erase(std::unique(range.begin(), range.end()), range.end());
+	}
+	
+	for (size_t i = 0; i < columnNames.size(); i++)
 	{
 		scanningRange.insert( { columnNames[i], data[i] });
 	}
@@ -307,7 +309,7 @@ void Scanner::FindTransitionPoints() {
 				double dVdT1 = (val2 - val1) / (T2 - T1);
 				warningsMinimization += GetFromMap(pOther, "warningsMinimization");
 				warningsDerivatives += GetFromMap(pOther, "warningsDerivatives");
-				bIsPerturbative *= GetFromMap(pOther, "isPerturbative");
+				bIsPerturbative = bIsPerturbative && GetFromMap(pOther, "isPerturbative");
 
 				// High-T derivative
 				pOther = resultsForT[i+1];
@@ -318,7 +320,7 @@ void Scanner::FindTransitionPoints() {
 				double dVdT2 = (val2 - val1) / (T2 - T1);
 				warningsMinimization += GetFromMap(pOther, "warningsMinimization");
 				warningsDerivatives += GetFromMap(pOther, "warningsDerivatives");
-				bIsPerturbative *= GetFromMap(pOther, "isPerturbative");
+				bIsPerturbative = bIsPerturbative && GetFromMap(pOther, "isPerturbative");
 				
 				LByT4 = abs(dVdT2 - dVdT1) / (Tc*Tc);
 			}

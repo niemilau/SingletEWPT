@@ -1,7 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +12,9 @@
 #include <map>
 #include <string>
 #include <complex>
+#include <filesystem>
+
+#include <cctype>    // for std::isspace
 
 
 #define PI 3.14159265358979323846
@@ -98,9 +100,38 @@ inline void PrintMap(const ParameterMap &map) {
 
 
 inline bool FileExists(const std::string& fname) {
-    std::ifstream f(fname.c_str());
-    return f.good();
+    
+    std::filesystem::path path{ fname };
+    return std::filesystem::exists(path);
 }
+
+// Remove tabs and whitespaces from start and end of string
+inline std::string TrimString(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t\r\n");
+    size_t last = str.find_last_not_of(" \t\r\n");
+    if (first == std::string::npos || last == std::string::npos) {
+        // String contains only whitespace
+        return "";
+    }
+    return str.substr(first, last - first + 1);
+}
+
+
+inline std::vector<std::string> SplitString(std::string s, std::string delimiter) {
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<std::string> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back(token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
+}
+
 
 
 /* Reads numbers from file, line by line, and puts them in a vector. 

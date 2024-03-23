@@ -75,7 +75,7 @@ public:
 
             std::cout << "Range " << parameterName << ": [" 
                         << values.front() << ", " <<  values.back() <<  "], " << values.size() << " points\n";
-            if (parameterName!= "T") {
+            if (parameterName != "T") {
                 points *= values.size(); 
             }
         }
