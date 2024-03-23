@@ -272,7 +272,9 @@ std::vector<std::array<double, 2>> EffPotT0<Complex>::InitialSearchPoints() cons
 	}
 
 	// Check that we have all sensible points
-	double smallFieldValue = 1e-3;
+	const double smallFieldValue = 1e-1;
+	const double largeFieldValue = 500.;
+
 	for (auto & point: searchPoints) {
 		double v = point[0];
 		double x = point[1];
@@ -287,10 +289,14 @@ std::vector<std::array<double, 2>> EffPotT0<Complex>::InitialSearchPoints() cons
 		searchPoints.push_back({smallFieldValue, smallFieldValue});
 	}
 	if (!bHasHiggsPhase) {
-		searchPoints.push_back({15.0, smallFieldValue});
+		searchPoints.push_back({largeFieldValue, smallFieldValue});
 	}
 	if (!bHasSingletPhase) {
-		searchPoints.push_back({smallFieldValue, 10.0});
+		searchPoints.push_back({smallFieldValue, largeFieldValue});
+
+		if (!bIsZ2Symmetric) {
+			searchPoints.push_back({smallFieldValue, -largeFieldValue});
+		}
 	}
 
 	return searchPoints;

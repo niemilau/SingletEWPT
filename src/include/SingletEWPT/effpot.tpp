@@ -1,5 +1,6 @@
 #include <gsl/gsl_poly.h>
 
+#include <dlib/global_optimization.h>
 
 
 
@@ -280,9 +281,18 @@ std::vector<std::array<double, 2>> EffPot<Complex>::TreeLevelMinima() const {
 }
 
 template <typename Complex>
-std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints() const {
+std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints(const ELoopOrderVeff loopOrder, bool bDoDim6) {
 
 	std::vector<std::array<double, 2>> searchPoints = TreeLevelMinima();
+
+	// Short global search
+	MinimizationResult globalTry = GlobalMinimization(loopOrder, bDoDim6);
+
+	const double re = globalTry.veffValue.real();
+	const double im = globalTry.veffValue.imag();
+	if (globalTry.warnings < 1 && abs(im/re) < 1e-5) {
+		searchPoints.push_back({ globalTry.v, globalTry.x });
+	}
 
 	bool bHasHiggsPhase = false;
 	bool bHasSingletPhase = false;
@@ -323,7 +333,7 @@ std::vector<std::array<double, 2>> EffPot<Complex>::InitialSearchPoints() const 
 	if (!bHasSingletPhase) {
 		searchPoints.push_back({smallFieldValue, largeFieldValue});
 
-		if (!bIsZ2Symmetric){
+		if (!bIsZ2Symmetric) {
 			searchPoints.push_back({smallFieldValue, -largeFieldValue});
 		}
 	}
@@ -397,7 +407,7 @@ Works with doubles, which get converted to Complex for internal computations */
 template <typename Complex>
 ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6) {
 
-	std::vector<std::array<double, 2>> startingPoints = InitialSearchPoints();
+	std::vector<std::array<double, 2>> startingPoints = InitialSearchPoints(loopOrder, bDoDim6);
 
 	// Our current result for the global minimum
 	MinimizationResult globalMinimum;
@@ -442,6 +452,55 @@ ParameterMap EffPot<Complex>::FindGlobalMinimum(const ELoopOrderVeff loopOrder, 
 	return res;
 }
 
+
+template <typename Complex>
+MinimizationResult EffPot<Complex>::GlobalMinimization(const ELoopOrderVeff loopOrder, bool bDoDim6, const MinimizationParams &minParams)
+{
+
+	double singletLowerBound = -1e10;
+	if (bIsZ2Symmetric) 
+		singletLowerBound = 0.0;
+
+	int warningsLocal = 0;
+
+	(void)minParams; // dodge -Wunused-param
+
+	// Set some clearly incorrect default values in case the algoritm below fails
+	MinimizationResult res;
+	res.v = 1e100;
+	res.x = 1e100;
+	res.veffValue = std::complex<double>(1e100, 1e100);
+	res.warnings = 0;
+
+	// Lambda for passing real part of Veff to the minimization routine
+	auto VeffValue = [&](double v, double x) { 
+		return real( EvaluatePotentialAsDouble(v, x, loopOrder, bDoDim6) );
+	};
+
+	try {
+		auto dlibResult = dlib::find_min_global(VeffValue, 
+			{0, singletLowerBound},
+			{1e6, 1e6},
+			std::chrono::milliseconds(1) // run this long
+		);
+
+		res.v = dlibResult.x(0);
+		res.x = dlibResult.x(1);
+		res.veffValue = EvaluatePotentialAsDouble(res.v, res.x, loopOrder, bDoDim6);
+
+	} catch (dlib::bobyqa_failure& exc) {
+		// Only print the exceptions in debug mode, otherwise there's too much spam. Warning flag is always toggled though 
+		DEBUG("!!! Exception thrown in GlobalMinimization():");
+		DEBUG(exc.what());
+		warningsLocal++;
+	}
+
+	res.warnings = warningsLocal;
+
+	return res;
+}
+
+
 template <typename Complex>
 ParameterMap EffPot<Complex>::GetMassEigenvalues() {
 
@@ -454,7 +513,6 @@ ParameterMap EffPot<Complex>::GetMassEigenvalues() {
 	masses["mZsq"] = (double)mZsq;
 	return masses;
 }
-
 
 
 /* Calculate relative shifts to the VEVs due to dim-6 operators (simple tree-level estimate).

@@ -185,12 +185,14 @@ public:
 	// Find a local minimum with initial guess (v0, x0). Returns doubles.
 	MinimizationResult FindLocalMinimum(const ELoopOrderVeff loopOrder, bool bDoDim6, double v0, double x0, const MinimizationParams &minParams = MinimizationParams());
 
+	// Relatively inprecise search for the global minimum. Usually prefer FindGlobalMinimum(), but this can be used to find an initial guess for the minimum
+	MinimizationResult GlobalMinimization(const ELoopOrderVeff loopOrder, bool bDoDim6, const MinimizationParams &minParams = MinimizationParams());
 
 private:
 	/* Return set of (v,x) pairs to use as starting points for FindGlobalMinimum(). 
 	This includes at least the tree-level extrema of the potential 
 	and possibly some hand-picked points corresponding to symmetric, Higgs, singlet phases (if not included in the former) */ 
-	std::vector<std::array<double, 2>> InitialSearchPoints() const;
+	std::vector<std::array<double, 2>> InitialSearchPoints(const ELoopOrderVeff loopOrder, bool bDoDim6);
 
 public:
 
