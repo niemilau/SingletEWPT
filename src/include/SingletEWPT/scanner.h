@@ -45,6 +45,9 @@ public:
     // Read parameters from file
     void ReadScannerParams(std::string fname);
 
+    // Reads parameter ranges from a .csv file, delimiter ",". Parameter names must be in the header
+    void ScanningRangesFromFile(const std::string& fname);
+
     void PrintScanner() {
         // Enums
         std::cout << "loopOrderMS : " << static_cast<int>(loopOrderMS) << "\n";

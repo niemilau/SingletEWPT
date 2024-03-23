@@ -1,5 +1,8 @@
 #include "scanner.h"
 
+#include <map>
+#include <array>
+
 std::vector<double> Scanner::MakeLinearGrid(double min, double max, double delta) {
 	std::vector<double> values;
 	values.reserve(std::abs((max-min) / delta));
@@ -119,17 +122,99 @@ void Scanner::ReadScannerParams(std::string fname)
 			// Just use a linear grid based on number given in parameters file
 			values = MakeLinearGrid(GetFromMap(nums, name+"_min"), GetFromMap(nums, name+"_max"), GetFromMap(nums, name+"_delta"));
 		}
-		this->scanningRange.insert( { name, values });
+		scanningRange.insert( { name, values });
 
 	};
 
-	SetParameterRange("mh2");
-	SetParameterRange("a2");
-	SetParameterRange("b3");
-	SetParameterRange("b4");
-	SetParameterRange("sinTheta");
-	SetParameterRange("T");
+	// Try reading scanning ranges in order: 2D table file -> range_<param> files -> parameters config file
+
+	const std::string tableFileName = "scanningTable.csv";
+	if (FileExists(tableFileName))
+	{
+		ScanningRangesFromFile(tableFileName);
+	}
+	
+	std::vector<std::string> paramNames{ "mh2", "a2", "b3", "b4", "sinTheta", "T" };
+
+	// check if some param was missing from the table, if yes try reading it from elsewhere
+	for (const std::string& param : paramNames)
+	{
+		if (scanningRange.count(param) < 1)
+		{
+			SetParameterRange(param);
+		}
+	}
+
 }
+
+void Scanner::ScanningRangesFromFile(const std::string &fname)
+{
+	std::ifstream file(fname);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << fname << std::endl;
+        exit(1);
+    }
+
+	/* Table should look like:
+	# mh2,a2,b3,b4,sinTheta
+	1,2,3,4,5
+	2,3,4,5,6
+	etc. Column order can be anything as long as the header specifies what column is what. */
+
+	// Parse first line
+	std::vector<std::string> columnNames;
+	std::string header;
+	while (std::getline(file, header))
+	{
+		std::stringstream headerStream(header);
+		std::string name;
+		while (std::getline(headerStream, name, ','))
+		{
+			columnNames.push_back(name);
+		}
+	}
+
+	std::array<std::vector<double>, columnNames.size()> data;	
+
+	std::string line;
+
+    while (std::getline(file, line)) 
+	{
+        std::stringstream ss(line);
+        std::string cell;
+        int colIndex = 0;
+
+		while (std::getline(ss, cell, ',')) {
+
+			if (colIndex >= columnNames.size())
+			{
+				std::cerr << "Column mismatch when parsing scan table. Faulty line:\n"
+				std::cerr << line << std::endl;
+				exit(2);
+			}
+
+            std::istringstream iss(cell);
+            double value;
+            iss >> value;
+            data[colIndex].push_back(value);
+            colIndex++;
+        }
+		// Check that we read right number of columns
+		if (colIndex != columnNames.size())
+		{
+			std::cerr << "Column mismatch when parsing scan table. Faulty line:\n"
+			std::cerr << line << std::endl;
+			exit(3);
+		}
+	}
+
+	for (int i = 0; i < columnNames.size(); i++)
+	{
+		scanningRange.insert( { columnNames[i], data[i] });
+	}
+
+}
+
 
 void Scanner::FindTransitionPoints() {
 
