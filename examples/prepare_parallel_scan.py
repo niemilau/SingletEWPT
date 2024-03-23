@@ -3,6 +3,9 @@ import itertools
 import os
 import shutil
 
+"""Script for preparing a large scanning table and splitting it to smaller subscans.
+"""
+
 def makeRangeInclusive(start: float, stop: float, stepSize: float) -> np.ndarray:
     """Uses smaller step size in the last step if the division is not even"""
 
@@ -33,11 +36,14 @@ def main():
 
     scanTable = np.array(list( itertools.product(values_mh2, values_a2, values_b4, values_sintheta, values_b3) ))
 
-    ## Parameter names in the same order as in the tuple above
-    paramNames = ["mh2", "a2", "b4", "sinTheta", "b3"]
+    numPoints = len(scanTable)
+
+    tableHeader = ["mh2", "a2", "b4", "sinTheta", "b3"]
 
     ## ---- Prepare N directories, one for each subscan, and copy necessary files there
     numProcesses = 2
+
+    print(f"Preparing {numProcesses} subscans, {int(numPoints / numProcesses)} points each. {numPoints} points total.")
 
     ## Should we copy and prepare files for slurm batch submission?
     bSlurmFiles = True
@@ -67,7 +73,7 @@ def main():
                     f.writelines(jobFileLines)
 
 
-    ## ---- Slice the parameters table into a smaller 2D table and construct range_<param> files from it, then store in appropriate subdir
+    ## ---- Slice the parameters table into a smaller 2D table and store in appropriate subdir
     numRows, numColumns = scanTable.shape
     rowsPerDir = numRows // numProcesses
     remainder = numRows % numProcesses
@@ -83,12 +89,8 @@ def main():
 
         scanTableSlice = scanTable[startRow:endRow, :]
 
-        ## Write each column to a range_<param> file
-        for j in range(numColumns):
-            
-            columnData = scanTableSlice[:, j]
-            filePath = os.path.join(dirName, f"range_{paramNames[j]}")
-            np.savetxt(filePath, columnData)
+        filePath = os.path.join(dirName, "scanningTable.csv")
+        np.savetxt(filePath, scanTableSlice,  delimiter=",", header=",".join(tableHeader))
 
 
 if __name__ == "__main__":
