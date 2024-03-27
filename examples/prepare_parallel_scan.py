@@ -29,20 +29,13 @@ def makeRangeInclusive(start: float, stop: float, stepSize: float) -> np.ndarray
 
 
 def main():
-
-    """
+    
     values_mh2 = makeRangeInclusive(100, 800, 5)
     values_a2 = makeRangeInclusive(0, 8, 0.1)
     values_b4 = makeRangeInclusive(0.25, 2.0, 0.25)
     values_sintheta = makeRangeInclusive(-0.3, 0.3, 0.02)
     values_b3 = makeRangeInclusive(-150, 150, 50)
-    """
-    values_mh2 = makeRangeInclusive(100, 150, 50)
-    values_a2 = makeRangeInclusive(0, 1, 0.2)
-    values_b4 = makeRangeInclusive(0.25, 0.25, 0.25)
-    values_sintheta = makeRangeInclusive(-0.1, 0.1, 0.1)
-    values_b3 = makeRangeInclusive(-50, 50, 50)
-    
+
     ## ---- Construct all possible combinations of these and put them in a 2D table
 
     scanTable = np.array(list( itertools.product(values_mh2, values_a2, values_b4, values_sintheta, values_b3) ))
@@ -52,7 +45,7 @@ def main():
     tableHeader = ["mh2", "a2", "b4", "sinTheta", "b3"]
 
     ## ---- Prepare N directories, one for each subscan, and copy necessary files there
-    numProcesses = 1
+    numProcesses = 5
 
     print(f"Preparing {numProcesses} subscans, {int(numPoints / numProcesses)} points each. {numPoints} points total.")
 
@@ -89,13 +82,15 @@ def main():
     rowsPerDir = numRows // numProcesses
     remainder = numRows % numProcesses
 
+    startRow = 0
+    rowsDone = 0
+
     for i in range(numProcesses):
         dirName = f"subscan_{i+1}"
         os.makedirs(dirName, exist_ok=False)
 
         copyFiles(dirName)
 
-        startRow = i * rowsPerDir
         endRow = startRow + rowsPerDir + (1 if i < remainder else 0)
 
         scanTableSlice = scanTable[startRow:endRow, :]
@@ -103,6 +98,13 @@ def main():
         filePath = os.path.join(dirName, "scanningTable.csv")
         np.savetxt(filePath, scanTableSlice,  delimiter=",", header=",".join(tableHeader), fmt='%g')
 
+        rows, _ = scanTableSlice.shape
+        rowsDone += rows
+
+        ## End index is exclusive in numpy, so we have not processed endRow yet
+        startRow = endRow
+
+    assert rowsDone == numRows, f"Something went wrong! Wrote {rowsDone} rows, but there should have been {numRows}"
 
 if __name__ == "__main__":
     main()
