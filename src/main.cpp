@@ -6,17 +6,12 @@
 #include "effpot.h"
 #include "effpot_T0.h"
 
-// Execution time evaluation
 #include <chrono>
 #include <utility>
 typedef std::chrono::high_resolution_clock::time_point TimeVar;
 #define Duration(a) std::chrono::duration_cast<std::chrono::seconds>(a).count()
 #define TimeNow() std::chrono::high_resolution_clock::now()
 
-// Multiprecision is too slow to use in real scans... double is 15 digits and running a test scan over T (151 values) takes 0.120s. 
-// With multiprecision 16 digits it takes 6.255s, which is 52 times more! So use standard double whenever possible.
-
-//int main(int argc, char *argv[]) {
 int main() {
 
 	using Complex = std::complex<double>;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(SingletEWPT VERSION 0.6.0 LANGUAGES CXX)
+project(SingletEWPT VERSION 1.0.0 LANGUAGES CXX)
 
 
 set(CMAKE_CXX_STANDARD 17)
@@ -38,21 +38,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     
     ## Add flags for gprof profiling. Debug builds only
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    	## This flag is needed also during linking so add_compile_options doesn't do the trick apparently
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-		# no optimization here since it can interfere with profiling
-		## Enable debugging preprocessor flag in the code
 		add_compile_definitions(DEBUG_MODE)
     endif()
     
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    	# Optimization
     	add_compile_options(-O3)
     endif()
     
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # Enable warnings and treat them as errors
-    #add_compile_options(/W4 /WX)
+	##
 endif()
 
 
@@ -62,9 +57,14 @@ set(MAIN_EXEC SingletEWPT)
 # Main code
 add_subdirectory(src)
 
-# Unit tests
+option(BUILD_TESTS "Build unit tests (fetches GTest)" OFF)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	message(STATUS "==== NOTE: Configuring Debug build")
 	message(STATUS "")
-    add_subdirectory(tests)
 endif()
+
+if(BUILD_TESTS)
+	add_subdirectory(tests)
+endif()
+
