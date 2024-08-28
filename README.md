@@ -2,7 +2,7 @@
 
 C++ program for studying the electroweak phase transition in Standard Model + real singlet theory. Computes the two-loop effective potential in the high-temperature approximation and varies the temperature until phase transition is found. See Arxiv 2103.07467 for details on the relevant physics.
 
-The program supports scanning over free parameters of the singlet model. Set parameter ranges in the ```parameters``` file, or use one of the utility scripts in the ```scripts/``` folder.
+The program supports scanning over free parameters of the singlet model. Set parameter ranges in the ```parameters``` file, or use one of the utility scripts in the ```examples/``` folder.
 
 ### Requirements
 
