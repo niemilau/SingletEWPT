@@ -64,7 +64,7 @@ writeAtEachTemperature          1
 onlySearchEWPT			1
 
 ## Minimum discontinuity in a field (v/T) until the jump is considered a phase transition
-# This option does nothing if onlySearchEWPT is set to true 
+# This option does nothing if onlySearchEWPT is enabled
 jumpThreshold			0.3
 
 ## Use beta functions to run to high-T scale? 
@@ -77,4 +77,4 @@ dim6TemperatureFraction		0.8
 ## If <= 0, will use "optimal" T-dependent scales ~ 7T and T
 ## Leave these at 0 unless you know what you're doing...
 matchingScaleOverride		0
-scale3DOverride				0
+scale3DOverride			0
